@@ -3,6 +3,7 @@ import { HeartHandshake, User, ShieldAlert, UserPlus, Mail, Lock, Key } from 'lu
 import { api } from '../services/api';
 
 export default function LandingAndAuth({ onLoginSuccess }) {
+  const [showLogin, setShowLogin] = useState(false);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [authTab, setAuthTab] = useState('login'); // 'login' or 'signup'
   const [email, setEmail] = useState('');
@@ -166,25 +167,90 @@ export default function LandingAndAuth({ onLoginSuccess }) {
     }
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center space-y-12 px-4 py-8 font-sans text-xl">
-      
-      {/* Hero Section Container */}
-      <div className="w-full max-w-5xl bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 sm:p-10 shadow-md text-center">
-        <div className="flex justify-center mb-6">
-          <div className="p-4 bg-silver-accent rounded-full border-4 border-silver-midtone">
-            <HeartHandshake className="w-20 h-20 text-silver-dark" aria-hidden="true" />
+  if (!showLogin) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-12 px-4 py-8 font-sans text-xl w-full">
+        
+        {/* Hero Section Container */}
+        <div className="w-full max-w-5xl bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 sm:p-10 shadow-md text-center">
+          <div className="flex justify-center mb-6">
+            <div className="p-4 bg-silver-accent rounded-full border-4 border-silver-midtone">
+              <HeartHandshake className="w-20 h-20 text-silver-dark" aria-hidden="true" />
+            </div>
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-black text-silver-dark tracking-tight mb-6">
+            SilverCare
+          </h1>
+          <p className="text-2xl sm:text-3xl font-extrabold text-silver-dark mb-4 uppercase tracking-wider">
+            Your Empathetic Care Companion
+          </p>
+          <p className="text-xl sm:text-2xl font-bold text-silver-midtone leading-relaxed max-w-3xl mx-auto">
+            Simplifying medical tracking, clinic queue waiting, and doctor briefings with accessible designs for senior citizens and caregivers.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => setShowLogin(true)}
+              className="py-6 px-12 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-2xl text-2xl sm:text-3xl font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer min-h-[80px]"
+            >
+              Get Started to Login ➔
+            </button>
           </div>
         </div>
-        <h1 className="text-4xl sm:text-6xl font-black text-silver-dark tracking-tight mb-6">
-          SilverCare
-        </h1>
-        <p className="text-2xl sm:text-3xl font-extrabold text-silver-dark mb-4 uppercase tracking-wider">
-          Your Empathetic Care Companion
-        </p>
-        <p className="text-xl sm:text-2xl font-bold text-silver-midtone leading-relaxed max-w-3xl mx-auto">
-          Simplifying medical tracking, clinic queue waiting, and doctor briefings with accessible designs for senior citizens and caregivers.
-        </p>
+
+        {/* About & Features Information Blocks */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+          {/* About Section */}
+          <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-sm">
+            <h2 className="text-2xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2 mb-4 flex items-center space-x-2">
+              <span>ℹ️</span>
+              <span>About SilverCare</span>
+            </h2>
+            <p className="text-lg sm:text-xl font-bold text-silver-dark leading-relaxed">
+              SilverCare is designed specifically for seniors facing cognitive or motor difficulties. Our interface uses high-contrast fonts, anti-glare screen configurations, and oversize click zones to ensure that monitoring your health stays simple, quick, and stress-free.
+            </p>
+          </div>
+
+          {/* Features List Section */}
+          <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-sm">
+            <h2 className="text-2xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2 mb-4 flex items-center space-x-2">
+              <span>✨</span>
+              <span>Key Assistant Features</span>
+            </h2>
+            <ul className="space-y-3 text-lg sm:text-xl font-bold text-silver-dark">
+              <li className="flex items-start space-x-2">
+                <span className="text-silver-midtone font-extrabold select-none">✓</span>
+                <span>Daily checklist for pills and check-ins</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-silver-midtone font-extrabold select-none">✓</span>
+                <span>Speech-to-Text symptoms journal</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-silver-midtone font-extrabold select-none">✓</span>
+                <span>Live clinic queue progress tracking</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-silver-midtone font-extrabold select-none">✓</span>
+                <span>Accessibility overlay with reading rules</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center space-y-8 px-4 py-8 font-sans text-xl w-full">
+      
+      {/* Back to details link */}
+      <div className="w-full max-w-5xl flex justify-start">
+        <button
+          onClick={() => setShowLogin(false)}
+          className="text-silver-midtone hover:text-silver-dark font-black text-lg uppercase cursor-pointer flex items-center space-x-2"
+        >
+          <span>←</span> <span>Back to Details & Features</span>
+        </button>
       </div>
 
       {/* Main Auth Panel */}
@@ -398,47 +464,6 @@ export default function LandingAndAuth({ onLoginSuccess }) {
         )}
 
       </div>
-
-      {/* About & Features Information Blocks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-        {/* About Section */}
-        <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-sm">
-          <h2 className="text-2xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2 mb-4 flex items-center space-x-2">
-            <span>ℹ️</span>
-            <span>About SilverCare</span>
-          </h2>
-          <p className="text-lg sm:text-xl font-bold text-silver-dark leading-relaxed">
-            SilverCare is designed specifically for seniors facing cognitive or motor difficulties. Our interface uses high-contrast fonts, anti-glare screen configurations, and oversize click zones to ensure that monitoring your health stays simple, quick, and stress-free.
-          </p>
-        </div>
-
-        {/* Features List Section */}
-        <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-sm">
-          <h2 className="text-2xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2 mb-4 flex items-center space-x-2">
-            <span>✨</span>
-            <span>Key Assistant Features</span>
-          </h2>
-          <ul className="space-y-3 text-lg sm:text-xl font-bold text-silver-dark">
-            <li className="flex items-start space-x-2">
-              <span className="text-silver-midtone font-extrabold select-none">✓</span>
-              <span>Daily checklist for pills and check-ins</span>
-            </li>
-            <li className="flex items-start space-x-2">
-              <span className="text-silver-midtone font-extrabold select-none">✓</span>
-              <span>Speech-to-Text symptoms journal</span>
-            </li>
-            <li className="flex items-start space-x-2">
-              <span className="text-silver-midtone font-extrabold select-none">✓</span>
-              <span>Live clinic queue progress tracking</span>
-            </li>
-            <li className="flex items-start space-x-2">
-              <span className="text-silver-midtone font-extrabold select-none">✓</span>
-              <span>Accessibility overlay with reading rules</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
     </div>
   );
 }
