@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HeartHandshake, User, ShieldAlert, Mail, Lock, Phone, Key } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing' }) {
+export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing', onViewChange }) {
   // view: 'landing' | 'patient' | 'caregiver'
   const [view, setView] = useState(initialView);
 
@@ -37,6 +37,7 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
     resetFormFields();
     setAuthTab('login');
     setView(target);
+    if (onViewChange) onViewChange(target);
   };
 
   const handlePatientSubmit = async (e) => {
@@ -104,10 +105,9 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
           <div className="flex justify-center">
             <button
               onClick={() => goToView('patient')}
-              className="py-6 px-12 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-2xl flex flex-col items-center space-y-2 transition-all hover:scale-105 active:scale-95 shadow-xl cursor-pointer min-h-[120px] max-w-sm w-full"
+              className="py-5 px-12 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl cursor-pointer min-h-[72px] max-w-sm w-full flex items-center justify-center"
             >
-              <User className="w-10 h-10" />
-              <span className="text-xl font-black uppercase">LOGIN</span>
+              <span className="text-2xl font-black uppercase">login</span>
             </button>
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
         </button>
       </div>
 
-      <div className="w-full max-w-5xl bg-silver-accent border-4 border-silver-midtone rounded-3xl p-8 shadow-md">
+      <div className="w-full max-w-5xl bg-silver-accent rounded-3xl p-8 shadow-none">
 
         <div className="flex items-center justify-center space-x-3 mb-6">
           {isCaregiver ? (
@@ -196,7 +196,7 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
 
           {/* ---------- PATIENT FORM ---------- */}
           {!isCaregiver && (
-            <form onSubmit={handlePatientSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl border-4 border-silver-midtone shadow-inner">
+            <form onSubmit={handlePatientSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl shadow-none">
 
               {authTab === 'signup' && (
                 <div>
@@ -257,7 +257,7 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
 
           {/* ---------- CAREGIVER FORM ---------- */}
           {isCaregiver && (
-            <form onSubmit={handleCaregiverSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl border-4 border-silver-midtone shadow-inner">
+            <form onSubmit={handleCaregiverSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl shadow-none">
 
               {authTab === 'signup' && (
                 <>

@@ -121,7 +121,9 @@ export default function App() {
       className={`min-h-screen flex flex-col justify-between transition-colors duration-200 select-none ${
         contrastMode === 'high' 
           ? 'bg-black text-white border-white' 
-          : 'bg-silver-bg text-silver-dark border-none'
+          : initialAuthView === 'landing' && !user
+            ? 'bg-[#FFFFFF] text-[#2F4156] border-none'
+            : 'bg-[#C8D9E6] text-[#2F4156] border-none'
       } ${
         dyslexiaFont ? 'font-mono tracking-wide' : 'font-sans font-bold'
       }`}
@@ -180,7 +182,11 @@ export default function App() {
       {/* 2. Main Core View Area (Cleaned from inner containers) */}
       <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
         {!user ? (
-          <LandingAndAuth onLoginSuccess={handleLoginSuccess} initialView={initialAuthView} />
+          <LandingAndAuth 
+            onLoginSuccess={handleLoginSuccess} 
+            initialView={initialAuthView} 
+            onViewChange={setInitialAuthView}
+          />
         ) : (
           <>
             {activeScreen === 'patient' && (
