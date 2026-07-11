@@ -72,6 +72,29 @@ export default function App() {
     }
   }, [user]);
 
+  // Set root font size on change of multiplier
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSizeMultiplier * 100}%`;
+    return () => {
+      document.documentElement.style.fontSize = '';
+    };
+  }, [fontSizeMultiplier]);
+
+  // Track mouse vertical position for reading ruler
+  const [rulerPosition, setRulerPosition] = useState(200);
+
+  useEffect(() => {
+    if (!readingRuler) return;
+    const handleMouseMove = (e) => {
+      setRulerPosition(e.clientY);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [readingRuler]);
+
+
   // SOS Emergency Trigger
   const handleTriggerSOS = async () => {
     setShowSOS(true);
@@ -122,7 +145,6 @@ export default function App() {
 
   return (
     <div 
-      style={{ fontSize: `${fontSizeMultiplier * 100}%` }}
       className={`min-h-screen flex flex-col justify-between pb-24 transition-colors duration-200 select-none ${
         contrastMode === 'high' 
           ? 'bg-black text-white border-white' 
@@ -170,7 +192,10 @@ export default function App() {
 
       {/* Reading Ruler Assist Panel (Horizontal focus band following user) */}
       {readingRuler && (
-        <div className="fixed left-0 right-0 h-16 bg-gray-500 bg-opacity-20 pointer-events-none z-30 border-y-4 border-yellow-400 top-1/3" />
+        <div 
+          style={{ top: `${rulerPosition}px`, transform: 'translateY(-50%)' }}
+          className="fixed left-0 right-0 h-16 bg-gray-500 bg-opacity-20 pointer-events-none z-30 border-y-4 border-yellow-400" 
+        />
       )}
 
       {/* App Header Selector Nav */}
@@ -264,12 +289,6 @@ export default function App() {
           highlightLinks={highlightLinks}
           onToggleMute={toggleMute}
           isMuted={isMuted}
-          onTriggerSOS={handleTriggerSOS}
-          onTriggerAIBot={(text) => {
-            setShowAIBot(true);
-            handleSendQuery(text);
-          }}
-          onTriggerTakeMeHome={() => setShowTakeMeHome(true)}
           onToggleReadingRuler={toggleReadingRuler}
           readingRuler={readingRuler}
         />

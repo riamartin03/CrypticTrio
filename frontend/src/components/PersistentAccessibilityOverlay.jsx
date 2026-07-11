@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Accessibility, Type, Contrast, Languages, EyeOff, Volume2, VolumeX, Navigation, MessageSquare, AlertOctagon, X } from 'lucide-react';
+import { Accessibility, Type, Contrast, EyeOff, Volume2, VolumeX, X } from 'lucide-react';
 
 export default function PersistentAccessibilityOverlay({
   onIncreaseFont,
@@ -14,25 +14,14 @@ export default function PersistentAccessibilityOverlay({
   highlightLinks,
   onToggleMute,
   isMuted,
-  onTriggerSOS,
-  onTriggerAIBot,
-  onTriggerTakeMeHome,
   onToggleReadingRuler,
   readingRuler
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [localQuery, setLocalQuery] = useState("");
-
   const toggleOverlay = () => {
     setIsOpen(!isOpen);
   };
 
-  const handleQuerySubmit = (e) => {
-    e.preventDefault();
-    if (!localQuery) return;
-    onTriggerAIBot(localQuery);
-    setLocalQuery("");
-  };
 
   return (
     <>
@@ -194,68 +183,7 @@ export default function PersistentAccessibilityOverlay({
               </div>
             </div>
 
-            {/* Shortcuts Panel Section */}
-            <div className="space-y-4 border-t-4 border-silver-accent pt-6">
-              <h3 className="text-lg font-black uppercase tracking-wider text-silver-sos border-b-2 border-red-200 pb-1">
-                Emergency & Assistive Shortcuts
-              </h3>
-              
-              <div className="space-y-4">
-                
-                {/* 1. Take Me Home helper block */}
-                <div className="bg-white border-4 border-silver-dark rounded-2xl p-4 space-y-2">
-                  <span className="text-sm font-black text-silver-dark uppercase tracking-wider flex items-center space-x-2">
-                    <Navigation className="w-5 h-5 text-silver-dark" />
-                    <span>Navigation Helper</span>
-                  </span>
-                  <p className="text-base text-gray-500 font-bold">Opens map navigation directly back to registered home.</p>
-                  <button
-                    onClick={() => onTriggerTakeMeHome()}
-                    className="w-full py-4 px-6 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-xl font-black text-lg transition-transform active:scale-95 cursor-pointer min-h-[64px] p-4"
-                    aria-label="Simulate Take Me Home maps launch"
-                  >
-                    📍 TAKE ME HOME
-                  </button>
-                </div>
 
-                {/* 2. Instant AI bot interaction interface */}
-                <form onSubmit={handleQuerySubmit} className="bg-white border-4 border-silver-midtone rounded-2xl p-4 space-y-3">
-                  <span className="text-sm font-black text-silver-dark uppercase tracking-wider flex items-center space-x-2">
-                    <MessageSquare className="w-5 h-5 text-silver-midtone" />
-                    <span>Assistive AI safety chat</span>
-                  </span>
-                  <p className="text-base text-gray-500 font-bold">Ask: "Can I take Metformin with grapefruit?"</p>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Ask the AI Bot..."
-                      value={localQuery}
-                      onChange={(e) => setLocalQuery(e.target.value)}
-                      className="flex-grow p-4 border-2 border-gray-300 rounded-xl bg-silver-bg font-semibold text-base min-h-[64px]"
-                      aria-label="Input field for AI drug safety queries"
-                    />
-                    <button
-                      type="submit"
-                      className="py-4 px-5 bg-silver-midtone hover:bg-silver-dark text-white font-black rounded-xl cursor-pointer min-h-[64px] min-w-[64px] flex items-center justify-center p-4"
-                      aria-label="Send query to safety bot"
-                    >
-                      ➔
-                    </button>
-                  </div>
-                </form>
-
-                {/* 3. Rapid SOS Shortcut Panic button */}
-                <button
-                  onClick={onTriggerSOS}
-                  className="w-full py-6 px-6 bg-silver-sos hover:bg-red-800 text-silver-card rounded-2xl font-black text-2xl flex items-center justify-center space-x-3 transition-transform active:scale-95 cursor-pointer border-4 border-white shadow-lg min-h-[84px] p-4"
-                  aria-label="Trigger SOS emergency alert checklist"
-                >
-                  <AlertOctagon className="w-8 h-8 animate-pulse shrink-0" />
-                  <span>RAPID SOS PANIC BUTTON</span>
-                </button>
-
-              </div>
-            </div>
 
           </div>
           
