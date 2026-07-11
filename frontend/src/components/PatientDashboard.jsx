@@ -130,7 +130,7 @@ export default function PatientDashboard({ hideImages = false }) {
             {meds.map((med) => (
               <div 
                 key={med.id} 
-                className={`rounded-2xl p-6 space-y-4 flex flex-col justify-between shadow-md transition-all bg-[#F5EFEB] ${
+                className={`rounded-2xl p-6 space-y-4 flex flex-col justify-between shadow-md transition-all bg-[#C8D9E6] ${
                   med.taken ? 'opacity-70' : ''
                 }`}
               >
