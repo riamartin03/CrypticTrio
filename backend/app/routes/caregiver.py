@@ -39,6 +39,17 @@ async def get_caregiver_dashboard(patient_id: str, current_user: dict = Depends(
     # 3. Gather patient medical profile
     patient_profile = await db["patients"].find_one({"patient_id": patient_id})
     profile_data = {
+        "preferred_name": patient_profile.get("preferred_name") if patient_profile else None,
+        "phone": patient_profile.get("phone") if patient_profile else None,
+        "date_of_birth": patient_profile.get("date_of_birth") if patient_profile else None,
+        "gender": patient_profile.get("gender") if patient_profile else None,
+        "blood_group": patient_profile.get("blood_group") if patient_profile else None,
+        "primary_conditions": patient_profile.get("primary_conditions", []) if patient_profile else [],
+        "mental_disabilities": patient_profile.get("mental_disabilities", []) if patient_profile else [],
+        "physical_disabilities": patient_profile.get("physical_disabilities", []) if patient_profile else [],
+        "lifetime_medications": patient_profile.get("lifetime_medications") if patient_profile else None,
+        "physician_name": patient_profile.get("physician_name") if patient_profile else None,
+        "clinic_phone": patient_profile.get("clinic_phone") if patient_profile else None,
         "emergency_contacts": patient_profile.get("emergency_contacts", []) if patient_profile else [],
         "medical_history": patient_profile.get("medical_history", []) if patient_profile else [],
         "allergies": patient_profile.get("allergies", []) if patient_profile else [],

@@ -31,6 +31,17 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         patient_profile = await db["patients"].find_one({"patient_id": current_user["_id"]})
         if patient_profile:
             response_data["profile"] = {
+                "preferred_name": patient_profile.get("preferred_name"),
+                "phone": patient_profile.get("phone"),
+                "date_of_birth": patient_profile.get("date_of_birth"),
+                "gender": patient_profile.get("gender"),
+                "blood_group": patient_profile.get("blood_group"),
+                "primary_conditions": patient_profile.get("primary_conditions", []),
+                "mental_disabilities": patient_profile.get("mental_disabilities", []),
+                "physical_disabilities": patient_profile.get("physical_disabilities", []),
+                "lifetime_medications": patient_profile.get("lifetime_medications"),
+                "physician_name": patient_profile.get("physician_name"),
+                "clinic_phone": patient_profile.get("clinic_phone"),
                 "emergency_contacts": patient_profile.get("emergency_contacts", []),
                 "medical_history": patient_profile.get("medical_history", []),
                 "allergies": patient_profile.get("allergies", []),
@@ -39,6 +50,17 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         else:
             # Fallback empty profile
             response_data["profile"] = {
+                "preferred_name": None,
+                "phone": None,
+                "date_of_birth": None,
+                "gender": None,
+                "blood_group": None,
+                "primary_conditions": [],
+                "mental_disabilities": [],
+                "physical_disabilities": [],
+                "lifetime_medications": None,
+                "physician_name": None,
+                "clinic_phone": None,
                 "emergency_contacts": [],
                 "medical_history": [],
                 "allergies": [],
@@ -88,6 +110,17 @@ async def update_profile(profile_data: PatientProfileCreate, current_user: dict 
     update_result = await db["patients"].update_one(
         {"patient_id": target_patient_id},
         {"$set": {
+            "preferred_name": profile_data.preferred_name,
+            "phone": profile_data.phone,
+            "date_of_birth": profile_data.date_of_birth,
+            "gender": profile_data.gender,
+            "blood_group": profile_data.blood_group,
+            "primary_conditions": profile_data.primary_conditions,
+            "mental_disabilities": profile_data.mental_disabilities,
+            "physical_disabilities": profile_data.physical_disabilities,
+            "lifetime_medications": profile_data.lifetime_medications,
+            "physician_name": profile_data.physician_name,
+            "clinic_phone": profile_data.clinic_phone,
             "emergency_contacts": [c.model_dump() for c in profile_data.emergency_contacts],
             "medical_history": profile_data.medical_history,
             "allergies": profile_data.allergies,

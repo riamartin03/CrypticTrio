@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ClipboardList, FileText, Calendar as CalendarIcon, ShieldAlert, Sun, Moon, Check, Image } from 'lucide-react';
 import PatientProfileModal from './PatientProfileModal';
 import DuringVisitModal from './DuringVisitModal';
 import CalendarModal from './CalendarModal';
 import SOSOverlay from './SOSOverlay';
+import { api } from '../services/api';
 
 export default function PatientDashboard({ hideImages = false }) {
   // Active modal state: null, 'profile', 'visit', 'calendar', 'sos'
@@ -26,6 +27,47 @@ export default function PatientDashboard({ hideImages = false }) {
       { id: 2, surgery: "Knee Replacement", year: "2019", hospital: "Orthopedic Center" }
     ]
   });
+
+  // Fetch patient profile from backend with graceful fallback
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const data = await api.user.getProfile();
+        if (data && data.profile) {
+          setProfileData({
+            name: data.name || "Ramesh Kumar",
+            gender: data.profile.gender || "Male",
+            bloodGroup: data.profile.blood_group || "O+",
+            allergies: data.profile.allergies || ["Penicillin", "Sulfa Antibiotics", "Aspirin"],
+            conditions: data.profile.primary_conditions || ["Early-stage Dementia", "Type 2 Diabetes", "Hypertension"],
+            surgicalHistory: data.profile.medical_history && data.profile.medical_history.length > 0 
+              ? data.profile.medical_history.map((s, idx) => {
+                  if (typeof s === 'string') {
+                    return { id: idx, surgery: s, year: "Not Specified", hospital: "Clinic Records" };
+                  }
+                  return s;
+                })
+              : [
+                  { id: 1, surgery: "Appendectomy", year: "1988", hospital: "City General" },
+                  { id: 2, surgery: "Knee Replacement", year: "2019", hospital: "Orthopedic Center" }
+                ],
+            preferred_name: data.profile.preferred_name || data.name || '',
+            phone: data.profile.phone || '',
+            date_of_birth: data.profile.date_of_birth || '',
+            mental_disabilities: data.profile.mental_disabilities || [],
+            physical_disabilities: data.profile.physical_disabilities || [],
+            lifetime_medications: data.profile.lifetime_medications || '',
+            physician_name: data.profile.physician_name || '',
+            clinic_phone: data.profile.clinic_phone || '',
+            home_address: data.profile.home_address || null
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to load patient profile from API. Using local mock defaults.", err);
+      }
+    }
+    loadProfile();
+  }, []);
 
   // Medications state (interactive inline checklist)
   const [meds, setMeds] = useState([

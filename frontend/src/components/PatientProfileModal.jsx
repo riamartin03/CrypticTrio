@@ -8,6 +8,20 @@ export default function PatientProfileModal({ isOpen, onClose, profileData }) {
 
   if (!isOpen) return null;
 
+  const preferredName = profileData.preferredName || profileData.preferred_name || '';
+  const phone = profileData.phone || '';
+  const dateOfBirth = profileData.dateOfBirth || profileData.date_of_birth || '';
+  const bloodGroup = profileData.bloodGroup || profileData.blood_group || '';
+  const conditions = profileData.conditions || profileData.primary_conditions || [];
+  const mentalDisabilities = profileData.mentalDisabilities || profileData.mental_disabilities || [];
+  const physicalDisabilities = profileData.physicalDisabilities || profileData.physical_disabilities || [];
+  const lifetimeMedications = profileData.lifetimeMedications || profileData.lifetime_medications || '';
+  const physicianName = profileData.physicianName || profileData.physician_name || '';
+  const clinicPhone = profileData.clinicPhone || profileData.clinic_phone || '';
+  const homeAddress = profileData.homeAddress || profileData.home_address || null;
+  const name = profileData.name || '';
+  const gender = profileData.gender || '';
+
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto font-sans">
       <div className="w-full max-w-4xl bg-white border-8 border-silver-dark rounded-[36px] shadow-2xl relative max-h-[90vh] overflow-y-auto flex flex-col text-silver-dark">
@@ -39,25 +53,116 @@ export default function PatientProfileModal({ isOpen, onClose, profileData }) {
           {/* Demographics & Locked Configuration Fields (Read-Only) */}
           <div className="border-4 border-silver-midtone rounded-2xl p-6 bg-silver-bg space-y-6">
             <h3 className="text-xl font-black uppercase text-silver-dark border-b-2 border-gray-300 pb-2">Locked Demographics</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
                 <label className="text-xs text-gray-500 font-bold block uppercase">Full Name</label>
-                <span className="text-2xl font-black">{profileData.name}</span>
+                <span className="text-2xl font-black">{name || 'N/A'}</span>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Preferred Name</label>
+                <span className="text-2xl font-black block">{preferredName || 'None'}</span>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Date of Birth</label>
+                <span className="text-2xl font-black block">{dateOfBirth || 'Not Specified'}</span>
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-bold block uppercase">Biological Gender</label>
-                <span className="text-2xl font-black block">{profileData.gender}</span>
+                <span className="text-2xl font-black block">{gender || 'N/A'}</span>
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-bold block uppercase">Verified Blood Group</label>
-                <span className="text-2xl font-black block">{profileData.bloodGroup}</span>
+                <span className="text-2xl font-black block">{bloodGroup || 'N/A'}</span>
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-bold block uppercase">Chronic Conditions</label>
-                <span className="text-xl font-black block">{profileData.conditions.join(', ')}</span>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Contact Phone</label>
+                <span className="text-2xl font-black block">{phone || 'Not Specified'}</span>
               </div>
             </div>
           </div>
+
+          {/* Clinical Profile Details */}
+          <div className="border-4 border-silver-midtone rounded-2xl p-6 bg-white space-y-6">
+            <h3 className="text-xl font-black uppercase text-silver-dark border-b-2 border-gray-300 pb-2">Clinical Profile Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Chronic Conditions</label>
+                <span className="text-xl font-black block text-silver-dark">
+                  {conditions.length > 0 ? conditions.join(', ') : 'No chronic conditions registered'}
+                </span>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Lifetime Medications</label>
+                <span className="text-xl font-black block text-silver-dark">{lifetimeMedications || 'None'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cognitive & Mobility Assistance */}
+          <div className="border-4 border-silver-midtone rounded-2xl p-6 bg-silver-bg space-y-6">
+            <h3 className="text-xl font-black uppercase text-silver-dark border-b-2 border-gray-300 pb-2">Cognitive & Mobility Assistance</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase mb-1">Mental & Cognitive Disabilities</label>
+                <div className="flex flex-wrap gap-2">
+                  {mentalDisabilities.length > 0 ? (
+                    mentalDisabilities.map((d, i) => (
+                      <span key={i} className="text-sm font-black bg-silver-midtone text-white px-3 py-1.5 rounded-lg uppercase">
+                        🧠 {d}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-base font-bold text-gray-500">None registered</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase mb-1">Physical & Mobility Disabilities</label>
+                <div className="flex flex-wrap gap-2">
+                  {physicalDisabilities.length > 0 ? (
+                    physicalDisabilities.map((d, i) => (
+                      <span key={i} className="text-sm font-black bg-silver-midtone text-white px-3 py-1.5 rounded-lg uppercase">
+                        🚶 {d}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-base font-bold text-gray-500">None registered</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Primary Physician Care */}
+          <div className="border-4 border-silver-midtone rounded-2xl p-6 bg-white space-y-6">
+            <h3 className="text-xl font-black uppercase text-silver-dark border-b-2 border-gray-300 pb-2">Primary Physician Care</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Primary Care Physician</label>
+                <span className="text-2xl font-black block text-silver-dark">{physicianName || 'No assigned physician'}</span>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Clinic Contact Phone</label>
+                <span className="text-2xl font-black block text-silver-dark">{clinicPhone || 'Not Specified'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Verified Home Location */}
+          {homeAddress && (
+            <div className="border-4 border-silver-midtone rounded-2xl p-6 bg-silver-bg space-y-4">
+              <h3 className="text-xl font-black uppercase text-silver-dark border-b-2 border-gray-300 pb-2">Verified Home Location</h3>
+              <div>
+                <label className="text-xs text-gray-500 font-bold block uppercase">Home Address</label>
+                <span className="text-xl font-black block text-silver-dark">{homeAddress.address_text || 'No address details'}</span>
+              </div>
+              {homeAddress.latitude && homeAddress.longitude && (
+                <div className="text-xs text-gray-400 font-bold uppercase mt-1">
+                  Coordinates: Lat {homeAddress.latitude}, Lng {homeAddress.longitude}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Surgical History timeline ledger (Read-only view locked) */}
           <div className="border-4 border-silver-midtone rounded-2xl p-6 space-y-4">

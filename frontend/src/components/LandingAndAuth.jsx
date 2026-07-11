@@ -45,6 +45,26 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
     setError(null);
     setLoading(true);
     try {
+      if (authTab === 'signup') {
+        await api.auth.signup({
+          email,
+          name,
+          password,
+          role: 'patient'
+        });
+      }
+      
+      const loginRes = await api.auth.login(email, password);
+      localStorage.setItem('silvercare_token', loginRes.access_token);
+      onLoginSuccess({
+        token: loginRes.access_token,
+        userId: loginRes.user_id,
+        role: loginRes.role,
+        name: loginRes.name || name || 'Ramesh Kumar',
+        patientId: loginRes.user_id
+      });
+    } catch (err) {
+      console.warn("Backend auth failed or offline. Falling back to local mock session:", err);
       localStorage.setItem('silvercare_token', 'dummy-patient-token');
       onLoginSuccess({
         token: 'dummy-patient-token',
@@ -53,8 +73,6 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
         name: name || 'Ramesh Kumar',
         patientId: 'dummy-patient-id'
       });
-    } catch (err) {
-      setError(err.message || "Authentication request failed.");
     } finally {
       setLoading(false);
     }
@@ -65,6 +83,27 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
     setError(null);
     setLoading(true);
     try {
+      if (authTab === 'signup') {
+        await api.auth.signup({
+          email,
+          name,
+          password,
+          role: 'caregiver',
+          link_user_id: patientId || undefined
+        });
+      }
+      
+      const loginRes = await api.auth.login(email, password);
+      localStorage.setItem('silvercare_token', loginRes.access_token);
+      onLoginSuccess({
+        token: loginRes.access_token,
+        userId: loginRes.user_id,
+        role: loginRes.role,
+        name: loginRes.name || name || 'John Caregiver',
+        patientId: patientId || 'dummy-patient-id'
+      });
+    } catch (err) {
+      console.warn("Backend auth failed or offline. Falling back to local mock session:", err);
       localStorage.setItem('silvercare_token', 'dummy-caregiver-token');
       onLoginSuccess({
         token: 'dummy-caregiver-token',
@@ -73,8 +112,6 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
         name: name || 'John Caregiver',
         patientId: patientId || 'dummy-patient-id'
       });
-    } catch (err) {
-      setError(err.message || "Authentication request failed.");
     } finally {
       setLoading(false);
     }
