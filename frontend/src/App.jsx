@@ -131,9 +131,9 @@ export default function App() {
         dyslexiaFont ? 'font-mono tracking-wide' : 'font-sans font-bold'
       }`}
     >
-      {/* 1. TOP-RIGHT PERSISTENT ROUND FLOATING BUTTONS */}
+      {/* 1. BOTTOM-RIGHT PERSISTENT ROUND FLOATING BUTTONS */}
       {user && (
-        <div className="fixed top-6 right-6 z-50 flex items-center space-x-4">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center space-x-4">
           
           {/* SOS Button */}
           <button
@@ -187,7 +187,7 @@ export default function App() {
           </div>
 
           {user && (
-            <nav className="flex items-center flex-wrap gap-3 pr-40 md:pr-64">
+            <nav className="flex items-center flex-wrap gap-3">
               <button
                 onClick={() => setActiveScreen('patient')}
                 className={`py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer flex items-center space-x-2 focus:ring-4 focus:ring-silver-midtone min-h-[64px] ${
