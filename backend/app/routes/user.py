@@ -1,10 +1,11 @@
 import logging
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from app.database import get_database
 from app.models.user import UserResponse
 from app.models.patient import PatientProfileBase, PatientProfileResponse, PatientProfileCreate
 from app.routes.auth import get_current_user
+from app.services.notification import trigger_sos_alert
 
 router = APIRouter(prefix="/user", tags=["User Profiles"])
 logger = logging.getLogger("silvercare.routes.user")
@@ -104,3 +105,19 @@ async def update_profile(profile_data: PatientProfileCreate, current_user: dict 
         "message": "Patient profile updated successfully",
         "profile": updated_profile
     }
+
+@router.post("/sos", status_code=status.HTTP_200_OK)
+async def trigger_patient_sos(patient_id: str, background_tasks: BackgroundTasks):
+    """
+    Triggers an immediate caregiver alert for an emergency SOS event.
+    """
+    db = get_database()
+    patient = await db["users"].find_one({"_id": patient_id})
+    if not patient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found"
+        )
+    background_tasks.add_task(trigger_sos_alert, patient_id)
+    return {"message": "SOS emergency warning successfully queued for caregiver dispatch."}
+

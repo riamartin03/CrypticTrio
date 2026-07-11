@@ -84,3 +84,50 @@ async def trigger_caregiver_alert(patient_id: str, medicine_id: str, time_slot: 
         )
         
     logger.info("Caregiver alerts successfully simulated.")
+
+async def trigger_sos_alert(patient_id: str):
+    """
+    Simulates sending an immediate emergency SOS alert (SMS/Email) to Caregiver.
+    Saves the alert to the db 'notifications' collection.
+    """
+    db = get_database()
+    patient_user = await db["users"].find_one({"_id": patient_id})
+    patient_name = patient_user.get("name", "Patient") if patient_user else "Patient"
+    caregivers = await db["users"].find({"role": "caregiver", "associated_user_ids": patient_id}).to_list(length=10)
+    
+    alert_subject = f"🚨 EMERGENCY SOS ALERT: Patient {patient_name} needs help!"
+    alert_body = (
+        f"CRITICAL WARNING! Patient {patient_name} has triggered their emergency SOS Panic Button!\n"
+        f"Please check on them immediately or call emergency services if they are unresponsive."
+    )
+    
+    alert_doc = {
+        "patient_id": patient_id,
+        "patient_name": patient_name,
+        "medicine_id": None,
+        "medicine_name": "Emergency SOS Trigger",
+        "time_slot": "Emergency",
+        "is_critical": True,
+        "message": alert_body,
+        "timestamp": datetime.utcnow().isoformat(),
+        "read": False
+    }
+    await db["notifications"].insert_one(alert_doc)
+    
+    for caregiver in caregivers:
+        caregiver_email = caregiver.get("email")
+        caregiver_name = caregiver.get("name", "Caregiver")
+        
+        await send_mock_email(
+            email=caregiver_email,
+            subject=alert_subject,
+            body=f"Hi {caregiver_name},\n\n{alert_body}\n\nBest,\nSilverCare Alert System"
+        )
+        
+        phone = caregiver.get("phone", "+15550199")
+        await send_mock_sms(
+            phone=phone,
+            message=f"🚨 SilverCare EMERGENCY SOS: {patient_name} pressed the panic button!"
+        )
+    logger.info("Emergency SOS alert successfully dispatched.")
+

@@ -1,25 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, TrendingUp, Calendar, AlertOctagon, Heart, CheckCircle2, XCircle, ClipboardList, Plus } from 'lucide-react';
+import { api } from '../services/api';
 
-export default function ShadowDashboard() {
-  // State for SOS historical logs
-  const [sosLogs, setSosLogs] = useState([
-    { id: 'sos-1', type: 'Emergency SOS Press', info: 'Ramesh triggered SOS button. Caregiver called back to resolve.', date: 'July 10, 2026', time: '02:14 PM', urgent: true },
-    { id: 'sos-2', type: 'Unverified Dose Warning', info: 'Atorvastatin 20mg went unverified for 30 minutes. Automated SMS sent.', date: 'July 08, 2026', time: '09:30 PM', urgent: false },
-  ]);
+export default function ShadowDashboard({ patientId }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const acknowledgeAlert = (id) => {
-    setSosLogs(sosLogs.filter((log) => log.id !== id));
-  };
+  // Caregiver Aggregated States
+  const [patientName, setPatientName] = useState("Patient");
+  const [complianceStats, setComplianceStats] = useState({
+    compliance_rate: 100.0,
+    total_logged_doses: 0,
+    completed_count: 0,
+    missed_count: 0
+  });
+  const [profile, setProfile] = useState({
+    allergies: [],
+    medical_history: [],
+    emergency_contacts: [],
+    home_address: null
+  });
+  const [meds, setMeds] = useState([]);
+  const [sosLogs, setSosLogs] = useState([]);
+  const [recentJournals, setRecentJournals] = useState([]);
 
-  // State for Appointments list
-  const [appointments, setAppointments] = useState([
-    { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: 'July 18, 2026', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
-    { id: 'cal-2', title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: 'July 24, 2026', time: '08:00 AM', location: 'Downtown Medical Center' },
-  ]);
-
+  // Local/UI Appointments state (linked via localStorage to patientId)
+  const [appointments, setAppointments] = useState([]);
   const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState("");
+
+  const loadCaregiverDashboard = async () => {
+    if (!patientId) {
+      setError("No associated patient linked to this caregiver account.");
+      setLoading(false);
+      return;
+    }
+    try {
+      setError(null);
+      const data = await api.caregiver.getDashboard(patientId);
+      
+      setPatientName(data.patient_name || "Patient");
+      setComplianceStats(data.compliance_stats || {
+        compliance_rate: 100.0,
+        total_logged_doses: 0,
+        completed_count: 0,
+        missed_count: 0
+      });
+      setProfile(data.profile || {
+        allergies: [],
+        medical_history: [],
+        emergency_contacts: [],
+        home_address: null
+      });
+      setMeds(data.medications || []);
+      setRecentJournals(data.recent_journals || []);
+      
+      // Load alerts from backend notifications
+      const mappedAlerts = (data.caregiver_alerts || []).map(alert => ({
+        id: alert._id || alert.id,
+        type: alert.is_critical ? 'Emergency SOS Warning' : 'Medication Alert',
+        info: alert.message,
+        date: alert.timestamp ? new Date(alert.timestamp).toLocaleDateString() : 'Today',
+        time: alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+        urgent: alert.is_critical
+      }));
+      setSosLogs(mappedAlerts);
+
+      // Load appointments synced from localStorage
+      const savedAppts = localStorage.getItem(`silvercare_appts_${patientId}`);
+      if (savedAppts) {
+        setAppointments(JSON.parse(savedAppts));
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch live caregiver tracking statistics.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCaregiverDashboard();
+  }, [patientId]);
+
+  const acknowledgeAlert = (id) => {
+    // Filter locally to clear from caregiver view
+    setSosLogs(sosLogs.filter((log) => log.id !== id));
+  };
 
   const addVisitLog = () => {
     if (!newTitle || !newDate) return;
@@ -31,10 +98,24 @@ export default function ShadowDashboard() {
       time: '11:00 AM',
       location: 'Main Medical Center'
     };
-    setAppointments([...appointments, newVisit]);
+    const updatedAppts = [...appointments, newVisit];
+    setAppointments(updatedAppts);
+    
+    // Save to sync with patient view
+    localStorage.setItem(`silvercare_appts_${patientId}`, JSON.stringify(updatedAppts));
+
     setNewTitle("");
     setNewDate("");
   };
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center bg-white border-4 border-silver-midtone rounded-3xl animate-pulse">
+        <h2 className="text-3xl font-black text-silver-dark uppercase">Loading Monitor Stream...</h2>
+        <p className="text-lg text-gray-500 font-bold mt-2">Connecting to live patient compliance history and health data.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 pb-16 font-sans text-xl leading-relaxed text-silver-dark">
@@ -47,35 +128,41 @@ export default function ShadowDashboard() {
         </div>
         <h1 className="text-3xl sm:text-5xl font-black mt-2">Shadow Caregiver Dashboard</h1>
         <p className="text-xl text-silver-bg mt-2 font-semibold">
-          Active Monitor Stream for Patient: <span className="font-extrabold underline text-white">Ramesh Kumar</span>.
+          Active Monitor Stream for Patient: <span className="font-extrabold underline text-white">{patientName}</span>.
         </p>
       </div>
+
+      {error && (
+        <div className="p-4 bg-silver-sos text-white text-lg font-black rounded-2xl text-center border-4 border-white">
+          ⚠️ {error}
+        </div>
+      )}
 
       {/* 1. Live Adherence Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-silver-card border-4 border-silver-midtone rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <span className="text-sm font-black text-gray-500 uppercase tracking-wider">Weekly Adherence</span>
           <div className="flex items-baseline space-x-2 my-2">
-            <span className="text-4xl font-black text-silver-dark">94.2%</span>
+            <span className="text-4xl font-black text-silver-dark">{complianceStats.compliance_rate}%</span>
             <TrendingUp className="w-6 h-6 text-emerald-600 shrink-0" />
           </div>
           <span className="text-xs font-bold text-gray-400">Real-time sync active</span>
         </div>
 
         <div className="bg-silver-card border-4 border-emerald-600 rounded-2xl p-6 shadow-sm flex flex-col justify-between bg-emerald-50">
-          <span className="text-sm font-black text-emerald-800 uppercase tracking-wider">Taken / Completed</span>
+          <span className="text-sm font-black text-emerald-800 uppercase tracking-wider">Completed Doses</span>
           <div className="flex items-baseline space-x-2 my-2">
-            <span className="text-4xl font-black text-emerald-700">45 Doses</span>
+            <span className="text-4xl font-black text-emerald-700">{complianceStats.completed_count} Doses</span>
           </div>
           <span className="text-xs font-bold text-emerald-600">Verification check-off logged</span>
         </div>
 
         <div className="bg-silver-card border-4 border-silver-sos rounded-2xl p-6 shadow-sm flex flex-col justify-between bg-red-50">
-          <span className="text-sm font-black text-silver-sos uppercase tracking-wider">Missed Alerts</span>
+          <span className="text-sm font-black text-silver-sos uppercase tracking-wider">Active Alerts</span>
           <div className="flex items-baseline space-x-2 my-2">
             <span className="text-4xl font-black text-silver-sos">{sosLogs.length} Warnings</span>
           </div>
-          <span className="text-xs font-bold text-red-500">Active alerts requiring attention</span>
+          <span className="text-xs font-bold text-red-500">Requires immediate attention</span>
         </div>
       </div>
 
@@ -95,24 +182,28 @@ export default function ShadowDashboard() {
           <div className="space-y-4">
             <div className="border-2 border-gray-300 rounded-xl p-4 bg-silver-bg">
               <span className="text-xs text-gray-500 font-bold block">PATIENT BIOGRAPHY</span>
-              <p className="text-lg font-black text-silver-dark">Ramesh Kumar — Male, Age 72</p>
+              <p className="text-lg font-black text-silver-dark">{patientName} — Male, Age 72</p>
             </div>
 
             <div className="border-4 border-silver-sos rounded-xl p-4 bg-red-50">
-              <span className="text-xs text-silver-sos font-black block">CONFIRMED PARADISCIPLINARY ALLERGIES</span>
+              <span className="text-xs text-silver-sos font-black block">CONFIRMED ALLERGIES</span>
               <div className="flex flex-wrap gap-2 mt-1.5">
-                {['Penicillin', 'Sulfa Antibiotics', 'Aspirin'].map((al) => (
-                  <span key={al} className="text-base font-black bg-silver-sos text-silver-card px-2.5 py-1 rounded">
-                    🚫 {al}
-                  </span>
-                ))}
+                {profile.allergies.length === 0 ? (
+                  <span className="text-base font-bold text-gray-500">None registered</span>
+                ) : (
+                  profile.allergies.map((al) => (
+                    <span key={al} className="text-base font-black bg-silver-sos text-silver-card px-2.5 py-1 rounded">
+                      🚫 {al}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
 
             <div className="border-2 border-gray-300 rounded-xl p-4">
               <span className="text-xs text-gray-500 font-bold block">CHRONIC MEDICAL HISTORY</span>
               <p className="text-lg font-bold text-silver-dark mt-1">
-                Hypertension, Type 2 Diabetes, Coronary Artery Disease.
+                {profile.medical_history.join(', ') || "No chronic medical conditions listed."}
               </p>
             </div>
           </div>
@@ -129,18 +220,22 @@ export default function ShadowDashboard() {
 
           {/* Appointments list */}
           <div className="space-y-4">
-            {appointments.map((evt) => (
-              <div key={evt.id} className="border-2 border-gray-300 rounded-xl p-4 flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-black text-silver-dark">{evt.title}</h3>
-                  <p className="text-base text-silver-midtone font-bold">{evt.doctor}</p>
-                  <span className="text-xs text-gray-400 font-bold block mt-2">📍 {evt.location}</span>
+            {appointments.length === 0 ? (
+              <p className="text-base font-bold text-gray-500">No scheduled appointments logged.</p>
+            ) : (
+              appointments.map((evt) => (
+                <div key={evt.id} className="border-2 border-gray-300 rounded-xl p-4 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-black text-silver-dark">{evt.title}</h3>
+                    <p className="text-base text-silver-midtone font-bold">{evt.doctor}</p>
+                    <span className="text-xs text-gray-400 font-bold block mt-2">📍 {evt.location}</span>
+                  </div>
+                  <span className="text-sm font-black bg-silver-dark text-silver-card px-2 py-1 rounded-lg shrink-0">
+                    {evt.date}
+                  </span>
                 </div>
-                <span className="text-sm font-black bg-silver-dark text-silver-card px-2 py-1 rounded-lg shrink-0">
-                  {evt.date}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
 
             {/* Caregiver schedule loader form */}
             <div className="border border-gray-300 rounded-xl p-3 bg-silver-bg space-y-3">
@@ -180,26 +275,28 @@ export default function ShadowDashboard() {
               <ClipboardList className="w-8 h-8 stroke-[2.5]" />
               <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide">Active Medication Prescriptions</h2>
             </div>
-            <span className="text-sm font-black bg-silver-bg text-silver-dark px-3 py-1 rounded-lg">3 ACTIVE SCHEDULERS</span>
+            <span className="text-sm font-black bg-silver-bg text-silver-dark px-3 py-1 rounded-lg">
+              {meds.length} ACTIVE SCHEDULERS
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { name: 'Lisinopril 10mg', dose: '1 pill daily', slot: 'Morning', spec: 'Pink / Round' },
-              { name: 'Metformin 500mg', dose: '1 capsule with meal', slot: 'Afternoon', spec: 'White / Capsule' },
-              { name: 'Atorvastatin 20mg', dose: '1 pill before bed', slot: 'Night', spec: 'White / Round' },
-            ].map((presc, idx) => (
-              <div key={idx} className="border-2 border-gray-300 rounded-2xl p-4 bg-silver-bg flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-black text-silver-dark">{presc.name}</h3>
-                  <p className="text-base font-bold text-gray-500 mt-1">{presc.dose}</p>
+            {meds.length === 0 ? (
+              <p className="text-base text-gray-500 font-bold col-span-3">No active medications registered.</p>
+            ) : (
+              meds.map((presc, idx) => (
+                <div key={idx} className="border-2 border-gray-300 rounded-2xl p-4 bg-silver-bg flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-silver-dark">{presc.name}</h3>
+                    <p className="text-base font-bold text-gray-500 mt-1">{presc.custom_instructions}</p>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-black mt-4 pt-2 border-t border-gray-300 text-silver-dark">
+                    <span>🕒 {presc.scheduled_times.join(', ')}</span>
+                    <span>💊 {presc.visual_identifiers ? `${presc.visual_identifiers.shape} / ${presc.visual_identifiers.color}` : 'Pill'}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-sm font-black mt-4 pt-2 border-t border-gray-300 text-silver-dark">
-                  <span>🕒 {presc.slot}</span>
-                  <span>💊 {presc.spec}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -247,6 +344,36 @@ export default function ShadowDashboard() {
                   >
                     ACKNOWLEDGE
                   </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Remote Window E: Patient Voice Symptom Journals */}
+        <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-md space-y-6 lg:col-span-2">
+          <div className="flex items-center space-x-3 border-b-4 border-silver-accent pb-2">
+            <ClipboardList className="w-8 h-8 stroke-[2.5]" />
+            <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide">Patient Voice Symptom Journals</h2>
+          </div>
+          <div className="space-y-4">
+            {recentJournals.length === 0 ? (
+              <p className="text-base font-bold text-gray-500">No symptom journals recorded yet.</p>
+            ) : (
+              recentJournals.map((journal) => (
+                <div key={journal.id || journal._id} className="border-2 border-gray-300 rounded-xl p-4 bg-silver-bg space-y-3">
+                  <div className="flex justify-between items-center text-sm font-black border-b border-gray-200 pb-2">
+                    <span className="text-silver-dark">JOURNAL LOG</span>
+                    <span className="text-silver-midtone">{new Date(journal.created_at).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 font-bold block">PATIENT VOICE TRANSCRIPT</span>
+                    <p className="text-lg font-bold italic text-silver-dark">"{journal.transcript}"</p>
+                  </div>
+                  <div className="bg-white border border-silver-midtone p-4 rounded-xl prose max-w-none">
+                    <strong className="text-base font-black text-silver-dark uppercase block mb-1">AI compiled Doctor Brief</strong>
+                    <pre className="font-sans text-sm whitespace-pre-wrap leading-relaxed">{journal.summary}</pre>
+                  </div>
                 </div>
               ))
             )}

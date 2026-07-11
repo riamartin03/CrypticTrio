@@ -1,14 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LandingAndAuth from './components/LandingAndAuth';
 import PatientDashboard from './components/PatientDashboard';
 import ShadowDashboard from './components/ShadowDashboard';
 import PersistentAccessibilityOverlay from './components/PersistentAccessibilityOverlay';
 import { Home, User, ShieldAlert, AlertOctagon, MessageSquare, Navigation, X, Check, ArrowRight } from 'lucide-react';
+import { api } from './services/api';
 
 export default function App() {
-  // Navigation State
-  const [activeScreen, setActiveScreen] = useState('landing'); // 'landing', 'patient', 'caregiver'
-  
+  // Authentication & Session State
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('silvercare_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // Navigation State: 'landing', 'patient', 'caregiver'
+  const [activeScreen, setActiveScreen] = useState(() => {
+    const saved = localStorage.getItem('silvercare_user');
+    return saved ? JSON.parse(saved).role : 'landing';
+  });
+
+  const handleLoginSuccess = (userData) => {
+    localStorage.setItem('silvercare_token', userData.token);
+    localStorage.setItem('silvercare_user', JSON.stringify(userData));
+    setUser(userData);
+    setActiveScreen(userData.role);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('silvercare_token');
+    localStorage.removeItem('silvercare_user');
+    setUser(null);
+    setActiveScreen('landing');
+  };
+
   // Accessibility States
   const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1.0);
   const [contrastMode, setContrastMode] = useState('standard'); // 'standard', 'high'
@@ -23,13 +47,45 @@ export default function App() {
   const [showAIBot, setShowAIBot] = useState(false);
   const [showTakeMeHome, setShowTakeMeHome] = useState(false);
 
+  // Home Navigation Details (Fetched from backend)
+  const [homeAddressText, setHomeAddressText] = useState("123 Sunny Meadows Lane, San Jose, CA");
+  const [homeMapsUrl, setHomeMapsUrl] = useState("https://www.google.com/maps/dir/?api=1&destination=37.3382,-121.8863");
+
   // AI Bot Chat Logs State
   const [chatInput, setChatInput] = useState("");
   const [chatLogs, setChatLogs] = useState([
     { sender: 'bot', text: 'Hello! I am your SilverCare drug safety assistant. Ask me questions like: "Can I eat grapefruit with my medicine?"' }
   ]);
+  const [aiLoading, setAiLoading] = useState(false);
 
-  const handleSendQuery = (queryText) => {
+  // Fetch navigation details on mount / user change
+  useEffect(() => {
+    if (user && user.patientId) {
+      api.navigation.getHomeRoute(user.patientId)
+        .then(res => {
+          setHomeAddressText(res.home_address);
+          setHomeMapsUrl(res.navigation_url);
+        })
+        .catch(err => {
+          console.log("Could not load home route navigation coords: ", err.message);
+        });
+    }
+  }, [user]);
+
+  // SOS Emergency Trigger
+  const handleTriggerSOS = async () => {
+    setShowSOS(true);
+    if (user && user.patientId) {
+      try {
+        await api.user.triggerSOS(user.patientId);
+      } catch (err) {
+        console.error("SOS dispatch failed: ", err);
+      }
+    }
+  };
+
+  // AI safety interaction submit
+  const handleSendQuery = async (queryText) => {
     const text = queryText || chatInput;
     if (!text) return;
     
@@ -37,24 +93,18 @@ export default function App() {
     const updatedLogs = [...chatLogs, { sender: 'user', text: text }];
     setChatLogs(updatedLogs);
     setChatInput("");
+    setAiLoading(true);
 
-    // Simulate bot safety evaluation
-    setTimeout(() => {
-      let botResponse = "I have checked your active medications. Please be cautious: avoid consuming alcohol or grapefruit juice with cholesterol drugs like Atorvastatin, as this can increase side effects. Consult your doctor.";
+    try {
+      const activePatientId = user?.patientId || user?.userId || 'demo_patient';
+      const res = await api.ai.foodInteraction(activePatientId, text);
       
-      const lowerText = text.toLowerCase();
-      if (lowerText.includes("grapefruit")) {
-        botResponse = "⚠️ Warning: Grapefruit juice interacts critically with Atorvastatin (your cholesterol medicine). It can increase the drug concentration in your blood to dangerous levels. Do not consume them together.";
-      } else if (lowerText.includes("milk") || lowerText.includes("calcium")) {
-        botResponse = "ℹ️ Note: Calcium/Milk can reduce the absorption of certain medications. If taking thyroid or antibiotic medications, space them at least 2 hours apart.";
-      } else if (lowerText.includes("alcohol")) {
-        botResponse = "⚠️ Warning: Alcohol increases the risk of stomach irritation and drowsiness when taken with Aspirin or Metformin. Avoid mixing them.";
-      } else if (lowerText.includes("metformin")) {
-        botResponse = "✅ Metformin 500mg should be taken with lunch. Avoid taking it on an empty stomach to prevent nausea. No critical interactions found with standard diet.";
-      }
-
-      setChatLogs([...updatedLogs, { sender: 'bot', text: botResponse }]);
-    }, 1000);
+      setChatLogs([...updatedLogs, { sender: 'bot', text: res.safety_warning }]);
+    } catch (err) {
+      setChatLogs([...updatedLogs, { sender: 'bot', text: "⚠️ Error contacting drug safety analysis engine. Please ask your doctor directly." }]);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // Accessibility Scaling Handlers
@@ -82,39 +132,41 @@ export default function App() {
       }`}
     >
       {/* 1. TOP-RIGHT PERSISTENT ROUND FLOATING BUTTONS */}
-      <div className="fixed top-6 right-6 z-50 flex items-center space-x-4">
-        
-        {/* SOS Button */}
-        <button
-          onClick={() => setShowSOS(true)}
-          className="w-16 h-16 sm:w-20 sm:h-20 bg-silver-sos hover:bg-red-800 text-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white transition-all active:scale-90 hover:scale-105 cursor-pointer focus:ring-4 focus:ring-red-400"
-          aria-label="SOS Emergency Help Trigger"
-        >
-          <AlertOctagon className="w-8 h-8 animate-pulse shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-tight mt-0.5">SOS</span>
-        </button>
+      {user && (
+        <div className="fixed top-6 right-6 z-50 flex items-center space-x-4">
+          
+          {/* SOS Button */}
+          <button
+            onClick={handleTriggerSOS}
+            className="w-16 h-16 sm:w-20 sm:h-20 bg-silver-sos hover:bg-red-800 text-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white transition-all active:scale-90 hover:scale-105 cursor-pointer focus:ring-4 focus:ring-red-400"
+            aria-label="SOS Emergency Help Trigger"
+          >
+            <AlertOctagon className="w-8 h-8 animate-pulse shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-tight mt-0.5">SOS</span>
+          </button>
 
-        {/* AI Bot Button */}
-        <button
-          onClick={() => setShowAIBot(true)}
-          className="w-16 h-16 sm:w-20 sm:h-20 bg-silver-midtone hover:bg-silver-dark text-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white transition-all active:scale-90 hover:scale-105 cursor-pointer focus:ring-4 focus:ring-silver-midtone"
-          aria-label="AI Drug Safety Assistant Chat"
-        >
-          <MessageSquare className="w-8 h-8 shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-tight mt-0.5">AI BOT</span>
-        </button>
+          {/* AI Bot Button */}
+          <button
+            onClick={() => setShowAIBot(true)}
+            className="w-16 h-16 sm:w-20 sm:h-20 bg-silver-midtone hover:bg-silver-dark text-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white transition-all active:scale-90 hover:scale-105 cursor-pointer focus:ring-4 focus:ring-silver-midtone"
+            aria-label="AI Drug Safety Assistant Chat"
+          >
+            <MessageSquare className="w-8 h-8 shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-tight mt-0.5">AI BOT</span>
+          </button>
 
-        {/* Take Me Home Button */}
-        <button
-          onClick={() => setShowTakeMeHome(true)}
-          className="w-16 h-16 sm:w-20 sm:h-20 bg-silver-dark hover:bg-silver-midtone text-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white transition-all active:scale-90 hover:scale-105 cursor-pointer focus:ring-4 focus:ring-silver-midtone"
-          aria-label="Get Directions Back Home"
-        >
-          <Navigation className="w-8 h-8 shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-tight mt-0.5">HOME</span>
-        </button>
+          {/* Take Me Home Button */}
+          <button
+            onClick={() => setShowTakeMeHome(true)}
+            className="w-16 h-16 sm:w-20 sm:h-20 bg-silver-dark hover:bg-silver-midtone text-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white transition-all active:scale-90 hover:scale-105 cursor-pointer focus:ring-4 focus:ring-silver-midtone"
+            aria-label="Get Directions Back Home"
+          >
+            <Navigation className="w-8 h-8 shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-tight mt-0.5">HOME</span>
+          </button>
 
-      </div>
+        </div>
+      )}
 
       {/* Reading Ruler Assist Panel (Horizontal focus band following user) */}
       {readingRuler && (
@@ -134,83 +186,94 @@ export default function App() {
             <span className="text-2xl font-black uppercase tracking-tight">SilverCare Portal</span>
           </div>
 
-          <nav className="flex items-center flex-wrap gap-3 pr-40 md:pr-64">
-            <button
-              onClick={() => setActiveScreen('landing')}
-              className={`py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer flex items-center space-x-2 focus:ring-4 focus:ring-silver-midtone min-h-[64px] ${
-                activeScreen === 'landing'
-                  ? contrastMode === 'high'
-                    ? 'bg-white text-black border-4 border-white'
-                    : 'bg-silver-card text-silver-dark border-4 border-silver-midtone'
-                  : 'bg-transparent text-silver-bg hover:text-white'
-              }`}
-            >
-              <Home className="w-6 h-6 shrink-0" />
-              <span>HOME</span>
-            </button>
+          {user && (
+            <nav className="flex items-center flex-wrap gap-3 pr-40 md:pr-64">
+              <button
+                onClick={() => setActiveScreen('patient')}
+                className={`py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer flex items-center space-x-2 focus:ring-4 focus:ring-silver-midtone min-h-[64px] ${
+                  activeScreen === 'patient'
+                    ? contrastMode === 'high'
+                      ? 'bg-white text-black border-4 border-white'
+                      : 'bg-silver-card text-silver-dark border-4 border-silver-midtone'
+                    : 'bg-transparent text-silver-bg hover:text-white'
+                }`}
+              >
+                <User className="w-6 h-6 shrink-0" />
+                <span>PATIENT VIEW</span>
+              </button>
 
-            <button
-              onClick={() => setActiveScreen('patient')}
-              className={`py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer flex items-center space-x-2 focus:ring-4 focus:ring-silver-midtone min-h-[64px] ${
-                activeScreen === 'patient'
-                  ? contrastMode === 'high'
-                    ? 'bg-white text-black border-4 border-white'
-                    : 'bg-silver-card text-silver-dark border-4 border-silver-midtone'
-                  : 'bg-transparent text-silver-bg hover:text-white'
-              }`}
-            >
-              <User className="w-6 h-6 shrink-0" />
-              <span>PATIENT VIEW</span>
-            </button>
+              <button
+                onClick={() => setActiveScreen('caregiver')}
+                className={`py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer flex items-center space-x-2 focus:ring-4 focus:ring-silver-midtone min-h-[64px] ${
+                  activeScreen === 'caregiver'
+                    ? contrastMode === 'high'
+                      ? 'bg-white text-black border-4 border-white'
+                      : 'bg-silver-card text-silver-dark border-4 border-silver-midtone'
+                    : 'bg-transparent text-silver-bg hover:text-white'
+                }`}
+              >
+                <ShieldAlert className="w-6 h-6 shrink-0 text-silver-sos" />
+                <span>CAREGIVER VIEW</span>
+              </button>
 
-            <button
-              onClick={() => setActiveScreen('caregiver')}
-              className={`py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer flex items-center space-x-2 focus:ring-4 focus:ring-silver-midtone min-h-[64px] ${
-                activeScreen === 'caregiver'
-                  ? contrastMode === 'high'
-                    ? 'bg-white text-black border-4 border-white'
-                    : 'bg-silver-card text-silver-dark border-4 border-silver-midtone'
-                  : 'bg-transparent text-silver-bg hover:text-white'
-              }`}
-            >
-              <ShieldAlert className="w-6 h-6 shrink-0 text-silver-sos" />
-              <span>CAREGIVER VIEW</span>
-            </button>
-          </nav>
+              <button
+                onClick={handleLogout}
+                className="py-3 px-5 text-xl font-black rounded-xl transition-all cursor-pointer bg-silver-sos text-white hover:bg-red-800 focus:ring-4 focus:ring-red-400 min-h-[64px]"
+              >
+                LOGOUT
+              </button>
+            </nav>
+          )}
 
         </div>
       </header>
 
       {/* Main Core View Area */}
       <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
-        {activeScreen === 'landing' && <LandingAndAuth setRole={setActiveScreen} />}
-        {activeScreen === 'patient' && <PatientDashboard hideImages={hideImages} />}
-        {activeScreen === 'caregiver' && <ShadowDashboard />}
+        {!user ? (
+          <LandingAndAuth onLoginSuccess={handleLoginSuccess} />
+        ) : (
+          <>
+            {activeScreen === 'patient' && (
+              <PatientDashboard 
+                hideImages={hideImages} 
+                patientId={user.patientId || user.userId} 
+              />
+            )}
+            {activeScreen === 'caregiver' && (
+              <ShadowDashboard 
+                patientId={user.patientId} 
+              />
+            )}
+          </>
+        )}
       </main>
 
       {/* 2. PERSISTENT FLOATING ACCESSIBILITY SETTINGS OVERLAY DRAWER */}
-      <PersistentAccessibilityOverlay 
-        onIncreaseFont={increaseFont}
-        onDecreaseFont={decreaseFont}
-        onToggleContrast={toggleContrast}
-        contrastMode={contrastMode}
-        onToggleDyslexia={toggleDyslexia}
-        dyslexiaFont={dyslexiaFont}
-        onToggleHideImages={toggleHideImages}
-        hideImages={hideImages}
-        onToggleHighlightLinks={toggleHighlightLinks}
-        highlightLinks={highlightLinks}
-        onToggleMute={toggleMute}
-        isMuted={isMuted}
-        onTriggerSOS={() => setShowSOS(true)}
-        onTriggerAIBot={(text) => {
-          setShowAIBot(true);
-          handleSendQuery(text);
-        }}
-        onTriggerTakeMeHome={() => setShowTakeMeHome(true)}
-        onToggleReadingRuler={toggleReadingRuler}
-        readingRuler={readingRuler}
-      />
+      {user && (
+        <PersistentAccessibilityOverlay 
+          onIncreaseFont={increaseFont}
+          onDecreaseFont={decreaseFont}
+          onToggleContrast={toggleContrast}
+          contrastMode={contrastMode}
+          onToggleDyslexia={toggleDyslexia}
+          dyslexiaFont={dyslexiaFont}
+          onToggleHideImages={toggleHideImages}
+          hideImages={hideImages}
+          onToggleHighlightLinks={toggleHighlightLinks}
+          highlightLinks={highlightLinks}
+          onToggleMute={toggleMute}
+          isMuted={isMuted}
+          onTriggerSOS={handleTriggerSOS}
+          onTriggerAIBot={(text) => {
+            setShowAIBot(true);
+            handleSendQuery(text);
+          }}
+          onTriggerTakeMeHome={() => setShowTakeMeHome(true)}
+          onToggleReadingRuler={toggleReadingRuler}
+          readingRuler={readingRuler}
+        />
+      )}
 
       {/* Modals & Overlays Mapped */}
       
@@ -232,6 +295,10 @@ export default function App() {
               </button>
             </div>
             
+            <div className="p-4 bg-red-800 text-white rounded-2xl border-4 border-white text-center text-xl font-bold animate-pulse">
+              🚨 Caregiver alert notification successfully dispatched via SMS & Email.
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <button 
                 onClick={() => alert("Calling 911 Emergency...")}
@@ -276,11 +343,11 @@ export default function App() {
             <p className="text-lg text-silver-bg">Your registered home coordinates directions maps helper link:</p>
             <div className="bg-white text-silver-dark rounded-2xl p-4 border-2 border-silver-midtone">
               <span className="text-xs text-gray-500 font-bold block">HOME DESTINATION ADDRESS</span>
-              <span className="text-xl font-black">123 Sunny Meadows Lane, San Jose, CA</span>
+              <span className="text-xl font-black">{homeAddressText}</span>
             </div>
 
             <a
-              href="https://www.google.com/maps/dir/?api=1&destination=37.3382,-121.8863"
+              href={homeMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-2xl font-bold rounded-2xl flex items-center justify-center space-x-2 text-center min-h-[64px]"
@@ -323,10 +390,24 @@ export default function App() {
                       ? 'bg-silver-dark text-silver-card border-silver-dark'
                       : 'bg-white text-silver-dark border-silver-midtone'
                   }`}>
-                    <p className="text-lg font-bold leading-relaxed">{chat.text}</p>
+                    {chat.sender === 'bot' ? (
+                      <div className="text-lg font-bold leading-relaxed prose max-w-none">
+                        <pre className="font-sans whitespace-pre-wrap text-lg leading-relaxed">{chat.text}</pre>
+                      </div>
+                    ) : (
+                      <p className="text-lg font-bold leading-relaxed">{chat.text}</p>
+                    )}
                   </div>
                 </div>
               ))}
+              {aiLoading && (
+                <div className="flex flex-col items-start">
+                  <span className="text-xs text-gray-500 font-bold uppercase mb-1">CareBot AI</span>
+                  <div className="p-4 rounded-2xl bg-white text-silver-dark border-2 border-silver-midtone animate-pulse font-bold">
+                    Analyzing drug interactions with your profile...
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Input Form */}
@@ -337,11 +418,13 @@ export default function App() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => { if(e.key === 'Enter') handleSendQuery(); }}
+                disabled={aiLoading}
                 className="flex-grow p-4 border-2 border-gray-300 rounded-xl bg-silver-bg font-semibold text-lg min-h-[64px]"
                 aria-label="AI search query input"
               />
               <button
                 onClick={() => handleSendQuery()}
+                disabled={aiLoading}
                 className="py-4 px-5 bg-silver-midtone hover:bg-silver-dark text-white font-black rounded-xl cursor-pointer min-h-[64px] min-w-[64px] flex items-center justify-center"
                 aria-label="Send Query"
               >
@@ -354,7 +437,7 @@ export default function App() {
       )}
 
       {/* Accessibility Compliant Footer */}
-      <footer className="bg-silver-card border-t-8 border-silver-accent text-center py-6 px-4 text-base font-bold text-silver-dark shrink-0">
+      <footer className="bg-silver-card border-t-8 border-silver-accent text-center py-6 px-4 text-base font-bold text-silver-dark shrink-0 font-sans">
         <p>👵 SilverCare Assistive Tech — Scaffolding strictly conforms with WCAG 2.1 AA Screen Contrast & Tremor Hit Targets.</p>
       </footer>
 

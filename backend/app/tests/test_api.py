@@ -4,7 +4,7 @@ import sys
 import os
 
 # Adjust path to import app correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from app.main import app
 from app.config import settings
