@@ -3,7 +3,7 @@ import LandingAndAuth from './components/LandingAndAuth';
 import PatientDashboard from './components/PatientDashboard';
 import ShadowDashboard from './components/ShadowDashboard';
 import PersistentAccessibilityOverlay from './components/PersistentAccessibilityOverlay';
-import { Home, User, ShieldAlert, AlertOctagon, MessageSquare, Navigation, X, Check, ArrowRight } from 'lucide-react';
+import { Home, User, ShieldAlert, AlertOctagon, MessageSquare, Navigation, X, Check, ArrowRight, HeartHandshake } from 'lucide-react';
 import { api } from './services/api';
 
 export default function App() {
@@ -145,7 +145,7 @@ export default function App() {
 
   return (
     <div 
-      className={`min-h-screen flex flex-col justify-between pb-24 transition-colors duration-200 select-none ${
+      className={`min-h-screen flex flex-col justify-between ${user ? 'pb-24' : ''} transition-colors duration-200 select-none ${
         contrastMode === 'high' 
           ? 'bg-black text-white border-white' 
           : 'bg-silver-bg text-silver-dark'
@@ -204,14 +204,20 @@ export default function App() {
           ? 'bg-black text-white border-white' 
           : 'bg-silver-dark text-silver-card border-silver-midtone'
       }`}>
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="w-full px-6 py-4 flex flex-row items-center justify-between gap-4">
           
-          <div className="flex items-center space-x-3 shrink-0">
-            <span className="text-3xl" role="img" aria-label="Elderly helper icon">👵</span>
-            <span className="text-2xl font-black uppercase tracking-tight">SilverCare Portal</span>
-          </div>
+          <button 
+            onClick={() => setActiveScreen(user ? user.role : 'landing')}
+            className="flex items-center space-x-3 shrink-0 cursor-pointer focus:outline-none focus:ring-4 focus:ring-silver-midtone rounded-xl p-1 text-left"
+          >
+            {/* Favicon/logo placeholder area */}
+            <div className="w-10 h-10 bg-silver-accent hover:bg-silver-midtone rounded-xl flex items-center justify-center border-2 border-silver-midtone shrink-0 transition-colors">
+              <HeartHandshake className="w-6 h-6 text-silver-dark" />
+            </div>
+            <span className="text-2xl font-black uppercase tracking-tight text-silver-card">SilverCare</span>
+          </button>
 
-          {user && (
+          {user ? (
             <nav className="flex items-center flex-wrap gap-3">
               <button
                 onClick={() => setActiveScreen('patient')}
@@ -248,6 +254,35 @@ export default function App() {
                 LOGOUT
               </button>
             </nav>
+          ) : (
+            <div className="flex items-center space-x-8">
+              <a
+                href="#about"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveScreen('landing');
+                  setTimeout(() => {
+                    const el = document.getElementById('about');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }}
+                className="text-xl font-black uppercase tracking-wider text-silver-bg hover:text-white transition-colors py-2 px-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-silver-midtone"
+              >
+                About
+              </a>
+              <a
+                href="#caregiver"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveScreen('caregiver-public');
+                }}
+                className="text-xl font-black uppercase tracking-wider text-silver-bg hover:text-white transition-colors py-2 px-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-silver-midtone"
+              >
+                Caregiver
+              </a>
+            </div>
           )}
 
         </div>
@@ -256,13 +291,31 @@ export default function App() {
       {/* Main Core View Area */}
       <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
         {!user ? (
-          <LandingAndAuth onLoginSuccess={handleLoginSuccess} />
+          activeScreen === 'caregiver-public' ? (
+            <div className="flex flex-col items-center justify-center space-y-8 px-4 py-8 font-sans text-xl w-full text-center">
+              <h1 className="text-4xl sm:text-6xl font-black text-silver-dark tracking-tight mb-6">
+                Caregiver
+              </h1>
+              <p className="text-xl sm:text-2xl font-bold text-silver-midtone leading-relaxed max-w-3xl mx-auto">
+                Welcome to the Caregiver portal. This space is designed for caregivers to securely coordinate access, monitor patient checklists, and manage alerts.
+              </p>
+              <button
+                onClick={() => setActiveScreen('landing')}
+                className="py-4 px-8 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-xl font-black uppercase transition-all cursor-pointer shadow-lg mt-6"
+              >
+                Back to Home
+              </button>
+            </div>
+          ) : (
+            <LandingAndAuth onLoginSuccess={handleLoginSuccess} />
+          )
         ) : (
           <>
             {activeScreen === 'patient' && (
               <PatientDashboard 
                 hideImages={hideImages} 
-                patientId={user.patientId || user.userId} 
+                patientId={user.patientId || user.userId}
+                onTriggerSOS={handleTriggerSOS}
               />
             )}
             {activeScreen === 'caregiver' && (
@@ -457,7 +510,7 @@ export default function App() {
 
       {/* Accessibility Compliant Footer */}
       <footer className="bg-silver-card border-t-8 border-silver-accent text-center py-6 px-4 text-base font-bold text-silver-dark shrink-0 font-sans">
-        <p>👵 SilverCare Assistive Tech — Scaffolding strictly conforms with WCAG 2.1 AA Screen Contrast & Tremor Hit Targets.</p>
+        <p>© 2026 All rights reserved to CrypticTrio</p>
       </footer>
 
     </div>

@@ -169,10 +169,10 @@ export default function LandingAndAuth({ onLoginSuccess }) {
 
   if (!showLogin) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-12 px-4 py-8 font-sans text-xl w-full">
+      <div className="flex flex-col items-center justify-center space-y-16 px-4 py-8 font-sans text-xl w-full">
         
         {/* Hero Section Container */}
-        <div className="w-full max-w-5xl bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 sm:p-10 shadow-md text-center">
+        <div className="w-full max-w-5xl text-center space-y-6">
           <div className="flex justify-center mb-6">
             <div className="p-4 bg-silver-accent rounded-full border-4 border-silver-midtone">
               <HeartHandshake className="w-20 h-20 text-silver-dark" aria-hidden="true" />
@@ -192,48 +192,26 @@ export default function LandingAndAuth({ onLoginSuccess }) {
               onClick={() => setShowLogin(true)}
               className="py-6 px-12 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-2xl text-2xl sm:text-3xl font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer min-h-[80px]"
             >
-              Get Started to Login ➔
+              Login
             </button>
           </div>
         </div>
 
-        {/* About & Features Information Blocks */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-          {/* About Section */}
-          <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-sm">
-            <h2 className="text-2xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2 mb-4 flex items-center space-x-2">
-              <span>ℹ️</span>
-              <span>About SilverCare</span>
-            </h2>
-            <p className="text-lg sm:text-xl font-bold text-silver-dark leading-relaxed">
-              SilverCare is designed specifically for seniors facing cognitive or motor difficulties. Our interface uses high-contrast fonts, anti-glare screen configurations, and oversize click zones to ensure that monitoring your health stays simple, quick, and stress-free.
+        {/* About Section */}
+        <div id="about" className="w-full max-w-5xl text-left space-y-6 py-8">
+          <h2 className="text-3xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2">
+            About
+          </h2>
+          <div className="space-y-4 text-xl font-bold text-silver-dark leading-relaxed">
+            <p>
+              SilverCare is a healthcare platform designed to simplify interactions between patients, caregivers, and healthcare providers.
             </p>
-          </div>
-
-          {/* Features List Section */}
-          <div className="bg-silver-card border-4 border-silver-midtone rounded-3xl p-8 shadow-sm">
-            <h2 className="text-2xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2 mb-4 flex items-center space-x-2">
-              <span>✨</span>
-              <span>Key Assistant Features</span>
-            </h2>
-            <ul className="space-y-3 text-lg sm:text-xl font-bold text-silver-dark">
-              <li className="flex items-start space-x-2">
-                <span className="text-silver-midtone font-extrabold select-none">✓</span>
-                <span>Daily checklist for pills and check-ins</span>
-              </li>
-              <li className="flex items-start space-x-2">
-                <span className="text-silver-midtone font-extrabold select-none">✓</span>
-                <span>Speech-to-Text symptoms journal</span>
-              </li>
-              <li className="flex items-start space-x-2">
-                <span className="text-silver-midtone font-extrabold select-none">✓</span>
-                <span>Live clinic queue progress tracking</span>
-              </li>
-              <li className="flex items-start space-x-2">
-                <span className="text-silver-midtone font-extrabold select-none">✓</span>
-                <span>Accessibility overlay with reading rules</span>
-              </li>
-            </ul>
+            <p>
+              The platform focuses on secure access, efficient communication, and streamlined healthcare management while providing a user-friendly experience.
+            </p>
+            <p>
+              It aims to make healthcare services more accessible, organized, and reliable for everyone.
+            </p>
           </div>
         </div>
       </div>
