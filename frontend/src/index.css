@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #F5EFEB; /* Fallback for bg-silver-bg */
+  color: #2F4156;            /* Fallback for text-silver-dark */
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Accessible focus styling */
+*:focus-visible {
+  outline: 4px solid #567C8D;
+  outline-offset: 4px;
+}
