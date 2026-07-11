@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HeartHandshake, User, ShieldAlert, Mail, Lock, Phone, Key } from 'lucide-react';
+import { HeartHandshake, User, ShieldAlert, Mail, Lock, Phone, Key, Calendar, FileText, MapPin, Heart, Users, Activity } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing', onViewChange }) {
@@ -24,6 +24,37 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
   const [phone, setPhone] = useState('');
   const [patientId, setPatientId] = useState('');
 
+  // Patient registration new fields
+  const [preferredName, setPreferredName] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  
+  const [bloodGroup, setBloodGroup] = useState('');
+  const [primaryConditions, setPrimaryConditions] = useState('');
+  const [mentalDisabilities, setMentalDisabilities] = useState('');
+  const [physicalDisabilities, setPhysicalDisabilities] = useState('');
+  const [lifetimeMedications, setLifetimeMedications] = useState('');
+  const [allergiesInput, setAllergiesInput] = useState('');
+  const [physicianName, setPhysicianName] = useState('');
+  const [clinicPhone, setClinicPhone] = useState('');
+  
+  const [caretakerName, setCaretakerName] = useState('');
+  const [caretakerPhone, setCaretakerPhone] = useState('');
+  const [caretakerEmail, setCaretakerEmail] = useState('');
+  const [caretakerRelationship, setCaretakerRelationship] = useState('');
+  const [secondaryContactName, setSecondaryContactName] = useState('');
+  const [secondaryContactPhone, setSecondaryContactPhone] = useState('');
+  
+  const [streetAddress, setStreetAddress] = useState('');
+  const [unitNumber, setUnitNumber] = useState('');
+  const [city, setCity] = useState('');
+  const [stateProvince, setStateProvince] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [country, setCountry] = useState('');
+  const [gpsCoordinates, setGpsCoordinates] = useState('');
+
   const resetFormFields = () => {
     setEmail('');
     setName('');
@@ -31,6 +62,32 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
     setPhone('');
     setPatientId('');
     setError(null);
+    setPreferredName('');
+    setPatientPhone('');
+    setConfirmPassword('');
+    setDateOfBirth('');
+    setGender('');
+    setBloodGroup('');
+    setPrimaryConditions('');
+    setMentalDisabilities('');
+    setPhysicalDisabilities('');
+    setLifetimeMedications('');
+    setAllergiesInput('');
+    setPhysicianName('');
+    setClinicPhone('');
+    setCaretakerName('');
+    setCaretakerPhone('');
+    setCaretakerEmail('');
+    setCaretakerRelationship('');
+    setSecondaryContactName('');
+    setSecondaryContactPhone('');
+    setStreetAddress('');
+    setUnitNumber('');
+    setCity('');
+    setStateProvince('');
+    setZipCode('');
+    setCountry('');
+    setGpsCoordinates('');
   };
 
   const goToView = (target) => {
@@ -46,11 +103,42 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
     setLoading(true);
     try {
       if (authTab === 'signup') {
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+        
         await api.auth.signup({
           email,
           name,
           password,
-          role: 'patient'
+          role: 'patient',
+          preferred_name: preferredName || undefined,
+          phone: patientPhone || undefined,
+          date_of_birth: dateOfBirth || undefined,
+          gender: gender || undefined,
+          blood_group: bloodGroup || undefined,
+          primary_conditions: primaryConditions ? primaryConditions.split(',').map(s => s.trim()) : [],
+          mental_disabilities: mentalDisabilities ? mentalDisabilities.split(',').map(s => s.trim()) : [],
+          physical_disabilities: physicalDisabilities ? physicalDisabilities.split(',').map(s => s.trim()) : [],
+          lifetime_medications: lifetimeMedications || undefined,
+          physician_name: physicianName || undefined,
+          clinic_phone: clinicPhone || undefined,
+          emergency_contacts: [
+            ...(caretakerName ? [{ name: caretakerName, phone: caretakerPhone, relationship: caretakerRelationship || 'Primary Caregiver', email: caretakerEmail || undefined }] : []),
+            ...(secondaryContactName ? [{ name: secondaryContactName, phone: secondaryContactPhone, relationship: 'Secondary Contact' }] : [])
+          ],
+          allergies: allergiesInput ? allergiesInput.split(',').map(s => s.trim()) : [],
+          home_address: streetAddress ? {
+            address_text: streetAddress,
+            latitude: gpsCoordinates ? parseFloat(gpsCoordinates.split(',')[0]) || 37.3382 : 37.3382,
+            longitude: gpsCoordinates ? parseFloat(gpsCoordinates.split(',')[1]) || -121.8863 : -121.8863,
+            street: streetAddress,
+            unit: unitNumber || undefined,
+            city: city || undefined,
+            state: stateProvince || undefined,
+            zip_code: zipCode || undefined,
+            country: country || undefined
+          } : undefined
         });
       }
       
@@ -64,6 +152,10 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
         patientId: loginRes.user_id
       });
     } catch (err) {
+      if (err.message === "Passwords do not match.") {
+        setError("Passwords do not match.");
+        return;
+      }
       console.warn("Backend auth failed or offline. Falling back to local mock session:", err);
       localStorage.setItem('silvercare_token', 'dummy-patient-token');
       onLoginSuccess({
@@ -281,6 +373,386 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
                   />
                 </div>
               </div>
+
+              {authTab === 'signup' && (
+                <>
+                  {/* Basic Information */}
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Preferred Name / Nickname</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Ramesh"
+                        value={preferredName}
+                        onChange={(e) => setPreferredName(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Phone Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="tel"
+                        placeholder="e.g. +1 555 0199"
+                        value={patientPhone}
+                        onChange={(e) => setPatientPhone(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Confirm Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Date of Birth</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Gender</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <select
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px] appearance-none"
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Medical Information */}
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Blood Group</label>
+                    <div className="relative">
+                      <Activity className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <select
+                        value={bloodGroup}
+                        onChange={(e) => setBloodGroup(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px] appearance-none"
+                      >
+                        <option value="">Select Blood Group</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="Unknown">Unknown</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Primary Medical Conditions</label>
+                    <div className="relative">
+                      <FileText className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <textarea
+                        placeholder="e.g. Hypertension, Diabetes (separate with commas)"
+                        value={primaryConditions}
+                        onChange={(e) => setPrimaryConditions(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Mental & Cognitive Disabilities</label>
+                    <div className="relative">
+                      <FileText className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <textarea
+                        placeholder="e.g. Dementia, None (separate with commas)"
+                        value={mentalDisabilities}
+                        onChange={(e) => setMentalDisabilities(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Physical & Sensory Disabilities</label>
+                    <div className="relative">
+                      <FileText className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <textarea
+                        placeholder="e.g. Knee Stiffness, None (separate with commas)"
+                        value={physicalDisabilities}
+                        onChange={(e) => setPhysicalDisabilities(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Lifetime Medications</label>
+                    <div className="relative">
+                      <Activity className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <textarea
+                        placeholder="e.g. Lisinopril 10mg, Metformin 500mg"
+                        value={lifetimeMedications}
+                        onChange={(e) => setLifetimeMedications(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Known Allergies & Drug Reactions</label>
+                    <div className="relative">
+                      <ShieldAlert className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <textarea
+                        placeholder="e.g. Penicillin, Aspirin (separate with commas)"
+                        value={allergiesInput}
+                        onChange={(e) => setAllergiesInput(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Primary Care Physician Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Dr. Emily Vance"
+                        value={physicianName}
+                        onChange={(e) => setPhysicianName(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Clinic Phone Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="tel"
+                        placeholder="e.g. +1 555 0244"
+                        value={clinicPhone}
+                        onChange={(e) => setClinicPhone(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Caregiver & Emergency Contact */}
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Primary Caretaker Name</label>
+                    <div className="relative">
+                      <Heart className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. John Caregiver"
+                        value={caretakerName}
+                        onChange={(e) => setCaretakerName(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Caretaker Phone Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="tel"
+                        placeholder="e.g. +1 555 0199"
+                        value={caretakerPhone}
+                        onChange={(e) => setCaretakerPhone(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Caretaker Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="email"
+                        placeholder="caretaker@example.com"
+                        value={caretakerEmail}
+                        onChange={(e) => setCaretakerEmail(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Relationship to Patient</label>
+                    <div className="relative">
+                      <Users className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Daughter, Spouse"
+                        value={caretakerRelationship}
+                        onChange={(e) => setCaretakerRelationship(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Secondary Emergency Contact Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Robert Smith"
+                        value={secondaryContactName}
+                        onChange={(e) => setSecondaryContactName(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Secondary Emergency Contact Phone Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="tel"
+                        placeholder="e.g. +1 555 0388"
+                        value={secondaryContactPhone}
+                        onChange={(e) => setSecondaryContactPhone(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address Information */}
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Full Street Address</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. 123 Sunny Meadows Lane"
+                        value={streetAddress}
+                        onChange={(e) => setStreetAddress(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Apartment / Suite / Unit Number</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Suite 402"
+                        value={unitNumber}
+                        onChange={(e) => setUnitNumber(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">City</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. San Jose"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">State / Province</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. CA"
+                        value={stateProvince}
+                        onChange={(e) => setStateProvince(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Postal / ZIP Code</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. 95192"
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Country</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. USA"
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">GPS Coordinates / Map Location</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        placeholder="e.g. 37.3382, -121.8863"
+                        value={gpsCoordinates}
+                        onChange={(e) => setGpsCoordinates(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <button
                 type="submit"
