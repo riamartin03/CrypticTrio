@@ -11,6 +11,7 @@ export default function App() {
   // Session State ('landing', 'patient', 'caregiver')
   const [user, setUser] = useState(null);
   const [activeScreen, setActiveScreen] = useState('landing');
+  const [initialAuthView, setInitialAuthView] = useState('landing');
 
   // Unified patient data for critical triggers (like SOS button)
   const [profileData] = useState({
@@ -133,7 +134,10 @@ export default function App() {
       }`}>
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           
-          <div className="flex items-center space-x-3 shrink-0 text-white">
+          <div 
+            onClick={() => setInitialAuthView('landing')}
+            className="flex items-center space-x-3 shrink-0 text-white cursor-pointer select-none"
+          >
             <HeartHandshake className="w-8 h-8 text-silver-accent stroke-[2.5]" />
             <span className="text-2xl font-black uppercase tracking-tight">SilverCare Portal</span>
           </div>
@@ -151,6 +155,7 @@ export default function App() {
             <nav className="flex items-center gap-3">
               <button
                 onClick={() => {
+                  setInitialAuthView('landing');
                   const el = document.getElementById('about');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
@@ -160,13 +165,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => {
-                  setUser({
-                    userId: 'demo-caregiver-id',
-                    role: 'caregiver',
-                    name: 'John Caregiver',
-                    patientId: 'demo-patient-id'
-                  });
-                  setActiveScreen('caregiver');
+                  setInitialAuthView('caregiver');
                 }}
                 className="py-2 px-4 text-lg font-black rounded-xl transition-all cursor-pointer bg-silver-midtone text-white hover:bg-silver-dark min-h-[48px]"
               >
@@ -181,7 +180,7 @@ export default function App() {
       {/* 2. Main Core View Area (Cleaned from inner containers) */}
       <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
         {!user ? (
-          <LandingAndAuth onLoginSuccess={handleLoginSuccess} />
+          <LandingAndAuth onLoginSuccess={handleLoginSuccess} initialView={initialAuthView} />
         ) : (
           <>
             {activeScreen === 'patient' && (

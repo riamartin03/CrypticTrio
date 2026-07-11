@@ -1,165 +1,57 @@
-import React, { useState } from 'react';
-import { HeartHandshake, User, ShieldAlert, UserPlus, Mail, Lock, Key } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { HeartHandshake, User, ShieldAlert, Mail, Lock, Phone, Key } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function LandingAndAuth({ onLoginSuccess }) {
-  const [showLogin, setShowLogin] = useState(false);
-  const [isCustomMode, setIsCustomMode] = useState(false);
+export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing' }) {
+  // view: 'landing' | 'patient' | 'caregiver'
+  const [view, setView] = useState(initialView);
+
+  useEffect(() => {
+    if (initialView) {
+      setView(initialView);
+    }
+  }, [initialView]);
   const [authTab, setAuthTab] = useState('login'); // 'login' or 'signup'
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('patient'); // 'patient' or 'caregiver'
-  const [linkUserId, setLinkUserId] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Auto-seeds Caregiver and Patient accounts + default medications & profiles
-  const handleQuickDemo = async (targetRole) => {
+  // Shared fields
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Caregiver-only fields
+  const [phone, setPhone] = useState('');
+  const [patientId, setPatientId] = useState('');
+
+  const resetFormFields = () => {
+    setEmail('');
+    setName('');
+    setPassword('');
+    setPhone('');
+    setPatientId('');
     setError(null);
-    setLoading(true);
-    try {
-      let cgToken, cgId;
-      // 1. Ensure John Caregiver exists
-      try {
-        const res = await api.auth.login('caregiver@test.com', 'securepassword123');
-        cgToken = res.access_token;
-        cgId = res.user_id;
-      } catch (e) {
-        const res = await api.auth.signup({
-          email: 'caregiver@test.com',
-          name: 'John Caregiver',
-          password: 'securepassword123',
-          role: 'caregiver'
-        });
-        cgId = res.id;
-        const loginRes = await api.auth.login('caregiver@test.com', 'securepassword123');
-        cgToken = loginRes.access_token;
-      }
-
-      // 2. Ensure Ramesh Kumar Patient exists, linked to John Caregiver
-      let patToken, patId;
-      try {
-        const res = await api.auth.login('patient@test.com', 'patientpassword123');
-        patToken = res.access_token;
-        patId = res.user_id;
-      } catch (e) {
-        const res = await api.auth.signup({
-          email: 'patient@test.com',
-          name: 'Ramesh Kumar',
-          password: 'patientpassword123',
-          role: 'patient',
-          link_user_id: cgId
-        });
-        patId = res.id;
-        const loginRes = await api.auth.login('patient@test.com', 'patientpassword123');
-        patToken = loginRes.access_token;
-      }
-
-      // 3. Seed default medications & profile coordinates for Ramesh Kumar
-      try {
-        const medicines = await api.scheduler.getMedicines(patId);
-        if (medicines.length === 0) {
-          await api.scheduler.createMedicine({
-            patient_id: patId,
-            name: 'Lisinopril 10mg',
-            visual_identifiers: { shape: 'Oval', color: 'Pink' },
-            scheduled_times: ['Morning'],
-            custom_instructions: 'Take 1 pill after breakfast',
-            is_critical: true
-          });
-          await api.scheduler.createMedicine({
-            patient_id: patId,
-            name: 'Metformin 500mg',
-            visual_identifiers: { shape: 'Capsule', color: 'White' },
-            scheduled_times: ['Afternoon'],
-            custom_instructions: 'Take 1 capsule with lunch',
-            is_critical: false
-          });
-          await api.scheduler.createMedicine({
-            patient_id: patId,
-            name: 'Atorvastatin 20mg',
-            visual_identifiers: { shape: 'Round', color: 'White' },
-            scheduled_times: ['Night'],
-            custom_instructions: 'Take 1 pill before bedtime',
-            is_critical: false
-          });
-          // Update profile coordinates
-          await api.user.updateProfile({
-            patient_id: patId,
-            emergency_contacts: [
-              { name: 'John Caregiver', phone: '+15550199', relationship: 'Caregiver' }
-            ],
-            medical_history: ['Hypertension', 'Type 2 Diabetes', 'Coronary Artery Disease'],
-            allergies: ['Penicillin', 'Sulfa Antibiotics', 'Aspirin'],
-            home_address: {
-              address_text: '123 Sunny Meadows Lane, San Jose, CA',
-              latitude: 37.3382,
-              longitude: -121.8863
-            }
-          });
-        }
-      } catch (err) {
-        console.error("Failed to seed default patient medications/profile: ", err);
-      }
-
-      // 4. Log in as the requested demo role
-      if (targetRole === 'caregiver') {
-        onLoginSuccess({
-          token: cgToken,
-          userId: cgId,
-          role: 'caregiver',
-          name: 'John Caregiver',
-          patientId: patId // Keep reference to patient
-        });
-      } else {
-        onLoginSuccess({
-          token: patToken,
-          userId: patId,
-          role: 'patient',
-          name: 'Ramesh Kumar',
-          patientId: patId
-        });
-      }
-    } catch (err) {
-      setError(err.message || "Failed to log in to Quick Demo");
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const handleCustomAuthSubmit = async (e) => {
+  const goToView = (target) => {
+    resetFormFields();
+    setAuthTab('login');
+    setView(target);
+  };
+
+  const handlePatientSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
-      if (authTab === 'login') {
-        const res = await api.auth.login(email, password);
-        onLoginSuccess({
-          token: res.access_token,
-          userId: res.user_id,
-          role: res.role,
-          name: res.name,
-          patientId: res.role === 'patient' ? res.user_id : null
-        });
-      } else {
-        // Sign Up
-        const signupData = { email, name, password, role };
-        if (role === 'patient' && linkUserId) {
-          signupData.link_user_id = linkUserId;
-        }
-        const res = await api.auth.signup(signupData);
-        // Automatically login after signup
-        const loginRes = await api.auth.login(email, password);
-        onLoginSuccess({
-          token: loginRes.access_token,
-          userId: loginRes.user_id,
-          role: loginRes.role,
-          name: loginRes.name,
-          patientId: loginRes.role === 'patient' ? loginRes.user_id : null
-        });
-      }
+      localStorage.setItem('silvercare_token', 'dummy-patient-token');
+      onLoginSuccess({
+        token: 'dummy-patient-token',
+        userId: 'dummy-patient-id',
+        role: 'patient',
+        name: name || 'Ramesh Kumar',
+        patientId: 'dummy-patient-id'
+      });
     } catch (err) {
       setError(err.message || "Authentication request failed.");
     } finally {
@@ -167,7 +59,28 @@ export default function LandingAndAuth({ onLoginSuccess }) {
     }
   };
 
-  if (!showLogin) {
+  const handleCaregiverSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      localStorage.setItem('silvercare_token', 'dummy-caregiver-token');
+      onLoginSuccess({
+        token: 'dummy-caregiver-token',
+        userId: 'dummy-caregiver-id',
+        role: 'caregiver',
+        name: name || 'John Caregiver',
+        patientId: patientId || 'dummy-patient-id'
+      });
+    } catch (err) {
+      setError(err.message || "Authentication request failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------- LANDING VIEW ----------
+  if (view === 'landing') {
     return (
       <div className="flex flex-col items-center justify-center space-y-16 px-4 py-8 font-sans text-xl w-full">
         
@@ -184,15 +97,17 @@ export default function LandingAndAuth({ onLoginSuccess }) {
           <p className="text-2xl sm:text-3xl font-extrabold text-silver-dark mb-4 uppercase tracking-wider">
             Your Empathetic Care Companion
           </p>
-          <p className="text-xl sm:text-2xl font-bold text-silver-midtone leading-relaxed max-w-3xl mx-auto">
+          <p className="text-xl sm:text-2xl font-bold text-silver-midtone leading-relaxed max-w-3xl mx-auto mb-10">
             Simplifying medical tracking, clinic queue waiting, and doctor briefings with accessible designs for senior citizens and caregivers.
           </p>
-          <div className="mt-8 flex justify-center">
+
+          <div className="flex justify-center">
             <button
-              onClick={() => setShowLogin(true)}
-              className="py-6 px-12 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-2xl text-2xl sm:text-3xl font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-2xl cursor-pointer min-h-[80px]"
+              onClick={() => goToView('patient')}
+              className="py-6 px-12 bg-silver-dark hover:bg-silver-midtone text-silver-card rounded-2xl flex flex-col items-center space-y-2 transition-all hover:scale-105 active:scale-95 shadow-xl cursor-pointer min-h-[120px] max-w-sm w-full"
             >
-              Login
+              <User className="w-10 h-10" />
+              <span className="text-xl font-black uppercase">LOGIN</span>
             </button>
           </div>
         </div>
@@ -218,22 +133,34 @@ export default function LandingAndAuth({ onLoginSuccess }) {
     );
   }
 
+  // ---------- SHARED AUTH SHELL ----------
+  const isCaregiver = view === 'caregiver';
+
   return (
     <div className="flex flex-col items-center justify-center space-y-8 px-4 py-8 font-sans text-xl w-full">
-      
-      {/* Back to details link */}
+
       <div className="w-full max-w-5xl flex justify-start">
         <button
-          onClick={() => setShowLogin(false)}
+          onClick={() => goToView('landing')}
           className="text-silver-midtone hover:text-silver-dark font-black text-lg uppercase cursor-pointer flex items-center space-x-2"
         >
-          <span>←</span> <span>Back to Details & Features</span>
+          <span>←</span> <span>Back to Home</span>
         </button>
       </div>
 
-      {/* Main Auth Panel */}
       <div className="w-full max-w-5xl bg-silver-accent border-4 border-silver-midtone rounded-3xl p-8 shadow-md">
-        
+
+        <div className="flex items-center justify-center space-x-3 mb-6">
+          {isCaregiver ? (
+            <ShieldAlert className="w-10 h-10 text-silver-sos" />
+          ) : (
+            <User className="w-10 h-10 text-silver-dark" />
+          )}
+          <h2 className="text-3xl font-black text-silver-dark uppercase tracking-wider">
+            {isCaregiver ? 'Caregiver Portal' : 'Patient Portal'}
+          </h2>
+        </div>
+
         {error && (
           <div className="mb-6 p-4 bg-silver-sos text-white text-lg font-black rounded-xl border-4 border-white text-center animate-bounce">
             ⚠️ {error}
@@ -246,84 +173,31 @@ export default function LandingAndAuth({ onLoginSuccess }) {
           </div>
         )}
 
-        {!isCustomMode ? (
-          <div>
-            <h2 className="text-3xl font-black text-silver-dark text-center mb-8 uppercase tracking-wider">
-              Quick Access Portals
-            </h2>
-            <div className="space-y-6 max-w-2xl mx-auto">
-              {/* Action 1: Patient Login */}
-              <button
-                onClick={() => handleQuickDemo('patient')}
-                disabled={loading}
-                className="w-full py-6 px-8 bg-silver-dark hover:bg-silver-midtone disabled:opacity-50 text-silver-card rounded-2xl flex items-center justify-between transition-colors border-4 border-transparent shadow-md focus:outline-none focus:ring-4 focus:ring-silver-midtone cursor-pointer min-h-[96px]"
-                aria-label="Login as Patient"
-              >
-                <div className="flex items-center space-x-6">
-                  <div className="p-3 bg-silver-card rounded-xl text-silver-dark shrink-0">
-                    <User className="w-8 h-8 stroke-[3]" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-2xl sm:text-3xl font-black block">Login as Patient</span>
-                    <span className="text-sm font-semibold text-silver-bg uppercase block">Demo Account: Ramesh Kumar</span>
-                  </div>
-                </div>
-                <span className="text-2xl font-black shrink-0">➔</span>
-              </button>
-
-              {/* Action 2: Caregiver Login */}
-              <button
-                onClick={() => handleQuickDemo('caregiver')}
-                disabled={loading}
-                className="w-full py-6 px-8 bg-silver-midtone hover:bg-silver-dark disabled:opacity-50 text-silver-card rounded-2xl flex items-center justify-between transition-colors border-4 border-transparent shadow-md focus:outline-none focus:ring-4 focus:ring-silver-dark cursor-pointer min-h-[96px]"
-                aria-label="Login as Caregiver"
-              >
-                <div className="flex items-center space-x-6">
-                  <div className="p-3 bg-silver-card rounded-xl text-silver-sos shrink-0">
-                    <ShieldAlert className="w-8 h-8 stroke-[3]" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-2xl sm:text-3xl font-black block">Login as Caregiver</span>
-                    <span className="text-sm font-semibold text-silver-bg uppercase block">Demo Account: John Caregiver</span>
-                  </div>
-                </div>
-                <span className="text-2xl font-black shrink-0">➔</span>
-              </button>
-
-              <div className="text-center pt-4">
-                <button
-                  onClick={() => setIsCustomMode(true)}
-                  className="text-silver-dark font-black hover:underline text-lg uppercase cursor-pointer"
-                >
-                  Or use a custom email / registration
-                </button>
-              </div>
-            </div>
+        <div className="max-w-2xl mx-auto">
+          {/* Tab Selector */}
+          <div className="flex border-4 border-silver-midtone rounded-2xl overflow-hidden mb-8 bg-white">
+            <button
+              onClick={() => { setAuthTab('login'); setError(null); }}
+              className={`flex-1 py-4 text-center font-black text-xl cursor-pointer ${
+                authTab === 'login' ? 'bg-silver-dark text-white' : 'bg-white text-silver-dark'
+              }`}
+            >
+              SIGN IN
+            </button>
+            <button
+              onClick={() => { setAuthTab('signup'); setError(null); }}
+              className={`flex-1 py-4 text-center font-black text-xl cursor-pointer ${
+                authTab === 'signup' ? 'bg-silver-dark text-white' : 'bg-white text-silver-dark'
+              }`}
+            >
+              REGISTER
+            </button>
           </div>
-        ) : (
-          <div className="max-w-2xl mx-auto">
-            {/* Form Mode Selector */}
-            <div className="flex border-4 border-silver-midtone rounded-2xl overflow-hidden mb-8 bg-white">
-              <button
-                onClick={() => setAuthTab('login')}
-                className={`flex-1 py-4 text-center font-black text-xl cursor-pointer ${
-                  authTab === 'login' ? 'bg-silver-dark text-white' : 'bg-white text-silver-dark'
-                }`}
-              >
-                SIGN IN
-              </button>
-              <button
-                onClick={() => setAuthTab('signup')}
-                className={`flex-1 py-4 text-center font-black text-xl cursor-pointer ${
-                  authTab === 'signup' ? 'bg-silver-dark text-white' : 'bg-white text-silver-dark'
-                }`}
-              >
-                REGISTER
-              </button>
-            </div>
 
-            <form onSubmit={handleCustomAuthSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl border-4 border-silver-midtone shadow-inner">
-              
+          {/* ---------- PATIENT FORM ---------- */}
+          {!isCaregiver && (
+            <form onSubmit={handlePatientSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl border-4 border-silver-midtone shadow-inner">
+
               {authTab === 'signup' && (
                 <div>
                   <label className="block text-sm font-black text-silver-dark uppercase mb-2">Full Name</label>
@@ -371,52 +245,101 @@ export default function LandingAndAuth({ onLoginSuccess }) {
                 </div>
               </div>
 
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-silver-dark hover:bg-silver-midtone text-white rounded-xl font-black text-xl shadow-md min-h-[64px]"
+              >
+                {authTab === 'login' ? 'SIGN IN NOW ➔' : 'REGISTER ACCOUNT ➔'}
+              </button>
+            </form>
+          )}
+
+          {/* ---------- CAREGIVER FORM ---------- */}
+          {isCaregiver && (
+            <form onSubmit={handleCaregiverSubmit} className="space-y-6 bg-silver-card p-6 sm:p-8 rounded-2xl border-4 border-silver-midtone shadow-inner">
+
               {authTab === 'signup' && (
-                <div className="space-y-4">
-                  <label className="block text-sm font-black text-silver-dark uppercase">Select Account Role</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setRole('patient')}
-                      className={`py-4 border-4 rounded-xl font-black text-lg cursor-pointer flex items-center justify-center space-x-2 ${
-                        role === 'patient' ? 'bg-silver-dark text-white border-silver-dark' : 'bg-white text-silver-dark border-gray-300'
-                      }`}
-                    >
-                      <User className="w-5 h-5" />
-                      <span>PATIENT</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole('caregiver')}
-                      className={`py-4 border-4 rounded-xl font-black text-lg cursor-pointer flex items-center justify-center space-x-2 ${
-                        role === 'caregiver' ? 'bg-silver-dark text-white border-silver-dark' : 'bg-white text-silver-dark border-gray-300'
-                      }`}
-                    >
-                      <ShieldAlert className="w-5 h-5" />
-                      <span>CAREGIVER</span>
-                    </button>
+                <>
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Caregiver Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. John Caregiver"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
+                    </div>
                   </div>
 
-                  {role === 'patient' && (
-                    <div className="pt-2">
-                      <label className="block text-sm font-black text-silver-dark uppercase mb-2">
-                        Link Caregiver ID (Optional)
-                      </label>
-                      <div className="relative">
-                        <Key className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
-                        <input
-                          type="text"
-                          placeholder="Caregiver's User UUID"
-                          value={linkUserId}
-                          onChange={(e) => setLinkUserId(e.target.value)}
-                          className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-base min-h-[64px]"
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 font-bold mt-1 block">
-                        Allows caregiver to access patient dashboards remotely.
-                      </span>
+                  <div>
+                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">Phone Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                      <input
+                        type="tel"
+                        required
+                        placeholder="e.g. +1 555 0199"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                      />
                     </div>
-                  )}
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-sm font-black text-silver-dark uppercase mb-2">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-black text-silver-dark uppercase mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-lg min-h-[64px]"
+                  />
+                </div>
+              </div>
+
+              {authTab === 'signup' && (
+                <div>
+                  <label className="block text-sm font-black text-silver-dark uppercase mb-2">Patient ID</label>
+                  <div className="relative">
+                    <Key className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Patient's User ID"
+                      value={patientId}
+                      onChange={(e) => setPatientId(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl bg-white font-semibold text-base min-h-[64px]"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 font-bold mt-1 block">
+                    Ask the patient for their Patient ID, shown on their dashboard after registration. Each patient can only be linked to one caregiver.
+                  </span>
                 </div>
               )}
 
@@ -427,20 +350,10 @@ export default function LandingAndAuth({ onLoginSuccess }) {
               >
                 {authTab === 'login' ? 'SIGN IN NOW ➔' : 'REGISTER ACCOUNT ➔'}
               </button>
-
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCustomMode(false)}
-                  className="text-silver-midtone hover:text-silver-dark font-black text-base uppercase cursor-pointer"
-                >
-                  ← Back to Quick Access Portals
-                </button>
-              </div>
             </form>
-          </div>
-        )}
+          )}
 
+        </div>
       </div>
     </div>
   );
