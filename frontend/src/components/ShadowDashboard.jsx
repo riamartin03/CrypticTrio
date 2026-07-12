@@ -24,14 +24,14 @@ export default function ShadowDashboard({ patientId }) {
           setAppointments(data);
         } else {
           setAppointments([
-            { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+            { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Rajesh', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
             { id: 'cal-2', title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
           ]);
         }
       } catch (err) {
         console.warn("Failed to load appointments for caregiver.", err);
         setAppointments([
-          { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+          { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Rajesh', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
           { id: 'cal-2', title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
         ]);
       }

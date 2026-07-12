@@ -46,3 +46,33 @@ async def food_interaction(payload: FoodInteractionRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compile AI safety warning: {str(e)}"
         )
+
+from typing import Optional
+from app.services.llm import ask_general_question
+
+class ChatRequest(BaseModel):
+    query: str
+    patient_id: Optional[str] = None
+
+@router.post("/chat")
+async def general_chat(payload: ChatRequest):
+    """
+    Answers a general health/safety question using the generative AI bot.
+    """
+    db = get_database()
+    active_meds = []
+    if payload.patient_id:
+        active_meds = await db["medicines"].find({"patient_id": payload.patient_id}).to_list(length=100)
+        
+    try:
+        response = await ask_general_question(payload.query, active_meds)
+        return {
+            "query": payload.query,
+            "response": response
+        }
+    except Exception as e:
+        logger.error(f"AI general chat failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate AI response: {str(e)}"
+        )

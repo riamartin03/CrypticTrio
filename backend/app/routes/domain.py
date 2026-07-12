@@ -46,7 +46,7 @@ async def get_visit_queue(patient_id: str):
             "ticket_number": 45,
             "current_serving_number": 42,
             "predicted_wait_time_minutes": 12,
-            "doctor_name": "Dr. Emily Vance",
+            "doctor_name": "Dr. Rajesh",
             "room_number": "Rm 402"
         }
     if "_id" in visit:

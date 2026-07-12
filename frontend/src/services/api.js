@@ -70,6 +70,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ patient_id: patientId, query }),
     }),
+    chat: (query, patientId) => request('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ query, patient_id: patientId }),
+    }),
   },
   navigation: {
     getHomeRoute: (patientId) => request(`/navigation/home-route?patient_id=${patientId}`),

@@ -81,11 +81,11 @@ export default function SOSOverlay({ isOpen, onClose, profileData }) {
             
             {/* Emergency Services */}
             <button
-              onClick={() => alert("Simulating phone call: Dialing 911 Emergency Services...")}
+              onClick={() => alert("Simulating phone call: Dialing 112 Emergency Services...")}
               className="py-5 px-6 bg-red-50 hover:bg-red-100 text-red-700 rounded-2xl font-black text-xl flex items-center justify-center space-x-3 shadow-md active:scale-95 transition-all cursor-pointer min-h-[72px]"
             >
               <Phone className="w-6 h-6 text-red-600" />
-              <span>DIAL EMERGENCY 911</span>
+              <span>DIAL EMERGENCY 112</span>
             </button>
 
             {/* Primary Caregiver */}

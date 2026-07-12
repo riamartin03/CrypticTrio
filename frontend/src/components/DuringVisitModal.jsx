@@ -10,6 +10,8 @@ export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appoi
   // Custom states
   const [isRecording, setIsRecording] = useState(false);
   const [consultationText, setConsultationText] = useState("AI Consultation log summary pending. Press 'Record' to capture conversation.");
+  const [servingNumber, setServingNumber] = useState(10);
+  const [estWait, setEstWait] = useState(12);
   
   const handleRxUploadSim = () => {
     setRxImage("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300");
@@ -51,19 +53,38 @@ export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appoi
           
           {/* A. Live Queue Tracker Panel */}
           <div className="border-4 border-silver-midtone rounded-2xl p-6 bg-silver-bg space-y-4">
-            <h3 className="text-xl font-black uppercase tracking-wider text-silver-dark border-b border-gray-300 pb-2">
-              Live Queue Tracker Panel
-            </h3>
+            <div className="flex justify-between items-center border-b border-gray-300 pb-2">
+              <h3 className="text-xl font-black uppercase tracking-wider text-silver-dark">
+                Live Queue Tracker Panel
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (servingNumber < 12) {
+                    setServingNumber(prev => prev + 1);
+                    setEstWait(prev => Math.max(0, prev - 6));
+                  } else {
+                    setServingNumber(10);
+                    setEstWait(12);
+                  }
+                }}
+                className="py-1.5 px-4 bg-silver-dark hover:bg-silver-midtone text-white rounded-lg font-black text-xs transition-all cursor-pointer shadow-sm uppercase"
+              >
+                {servingNumber >= 12 ? "Reset Queue" : "Advance Queue"}
+              </button>
+            </div>
             <div className="flex items-center justify-between flex-wrap gap-4 py-2">
               <div className="flex items-center space-x-3">
                 <span className="text-sm font-black bg-silver-dark text-white px-2 py-1 rounded">POSITION</span>
                 <div className="flex items-center space-x-2 text-xl font-black">
-                  <span className="text-gray-400">#10</span>
+                  <span className={servingNumber === 10 ? "text-silver-sos font-black scale-110" : "text-gray-400"}>#10</span>
                   <span className="text-silver-dark">➔</span>
-                  <span className="text-gray-400">#11</span>
+                  <span className={servingNumber === 11 ? "text-silver-sos font-black scale-110" : "text-gray-400"}>#11</span>
                   <span className="text-silver-dark">➔</span>
-                  <span className="text-silver-sos font-black text-2xl">#12 (YOU)</span>
-                  <span className="text-gray-400">➔</span>
+                  <span className={servingNumber >= 12 ? "text-emerald-600 font-black text-2xl" : "text-silver-sos font-black text-2xl"}>
+                    #12 {servingNumber >= 12 ? "(YOUR TURN)" : "(YOU)"}
+                  </span>
+                  <span className="text-silver-dark">➔</span>
                   <span className="text-gray-400">#13</span>
                 </div>
               </div>
@@ -71,7 +92,9 @@ export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appoi
             {/* Predicted Appointment Clock */}
             <div className="bg-white border-2 border-silver-sos p-4 rounded-xl text-center">
               <span className="text-2xl sm:text-3xl font-black text-silver-sos block animate-pulse">
-                ⏱️ Estimated time until your turn: 12 minutes
+                {servingNumber >= 12 
+                  ? "🔔 IT'S YOUR TURN! Please enter Room 402 now." 
+                  : `⏱️ Estimated time until your turn: ${estWait} minutes`}
               </span>
             </div>
           </div>
@@ -82,7 +105,7 @@ export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appoi
             <div className="bg-white border-2 border-gray-300 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <span className="text-xs text-gray-500 font-bold block uppercase">DOCTOR NAME</span>
-                <span className="text-lg font-black text-silver-dark">Dr. Emily Vance</span>
+                <span className="text-lg font-black text-silver-dark">Dr. Rajesh</span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 font-bold block uppercase">SPECIALIZATION</span>

@@ -35,7 +35,7 @@ class ClinicalVisitResponse(ClinicalVisitBase):
                 "ticket_number": 45,
                 "current_serving_number": 42,
                 "predicted_wait_time_minutes": 15,
-                "doctor_name": "Dr. Emily Vance",
+                "doctor_name": "Dr. Rajesh",
                 "room_number": "Rm 402",
                 "raw_audio_url": None,
                 "ai_consultation_summary": "Patient is responding well to blood pressure control adjustments.",

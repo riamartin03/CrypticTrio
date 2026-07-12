@@ -29,7 +29,7 @@ async def get_active_visit(patient_id: str):
     if not visit:
         return VisitDetails(
             patient_id=patient_id,
-            doctor_name="Dr. Emily Vance",
+            doctor_name="Dr. Rajesh",
             clinic_name="St. Jude General",
             appointment_date="2026-07-18",
             live_queue={
@@ -50,7 +50,7 @@ async def get_active_visit(patient_id: str):
         )
     return VisitDetails(
         patient_id=visit.get("patient_id") or patient_id,
-        doctor_name=visit.get("doctor_name") or "Dr. Emily Vance",
+        doctor_name=visit.get("doctor_name") or "Dr. Rajesh",
         clinic_name=visit.get("clinic_name") or "St. Jude General",
         appointment_date=visit.get("appointment_date") or "2026-07-18",
         live_queue=visit.get("live_queue") or {
@@ -86,7 +86,7 @@ async def save_audio_summary(req: AudioSummaryRequest):
         visit_doc = {
             "_id": str(uuid.uuid4()),
             "patient_id": req.patient_id,
-            "doctor_name": "Dr. Emily Vance",
+            "doctor_name": "Dr. Rajesh",
             "clinic_name": "St. Jude General",
             "appointment_date": "2026-07-18",
             "live_queue": {

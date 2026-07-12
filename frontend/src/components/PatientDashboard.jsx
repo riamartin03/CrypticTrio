@@ -80,21 +80,27 @@ export default function PatientDashboard({ hideImages = false, patientId }) {
           setMeds(data.map(m => ({
             id: m.id || m._id || m.medicine_id,
             name: m.name,
-            time: m.time_of_day || 'Morning',
-            instructions: m.instructions || 'Take as directed',
-            shape: m.shape || 'Oval',
-            color: m.color || 'White',
+            time: m.time_of_day || m.scheduled_times?.[0] || 'Morning',
+            instructions: m.instructions || m.custom_instructions || 'Take as directed',
+            shape: m.shape || m.visual_identifiers?.shape || 'Oval',
+            color: m.color || m.visual_identifiers?.color || 'White',
+            image: m.image_url || m.imageUrl || null,
             taken: m.taken || false
           })));
         } else {
           setMeds([
-            { id: 'med-1', name: 'Lisinopril 10mg', time: 'Morning', instructions: 'Take 1 pill after breakfast', shape: 'Oval', color: 'Pink', taken: true },
-            { id: 'med-2', name: 'Metformin 500mg', time: 'Morning', instructions: 'Take 1 capsule with breakfast', shape: 'Capsule', color: 'White', taken: false },
-            { id: 'med-3', name: 'Atorvastatin 20mg', time: 'Night', instructions: 'Take 1 pill before bedtime', shape: 'Round', color: 'White', taken: false },
+            { id: 'med-1', name: 'Lisinopril 10mg', time: 'Morning', instructions: 'Take 1 pill after breakfast', shape: 'Oval', color: 'Pink', image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300', taken: true },
+            { id: 'med-2', name: 'Metformin 500mg', time: 'Morning', instructions: 'Take 1 capsule with breakfast', shape: 'Capsule', color: 'White', image: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=300', taken: false },
+            { id: 'med-3', name: 'Atorvastatin 20mg', time: 'Night', instructions: 'Take 1 pill before bedtime', shape: 'Round', color: 'White', image: 'https://images.unsplash.com/photo-1550572017-edd951b55104?w=300', taken: false },
           ]);
         }
       } catch (err) {
         console.warn("Failed to load medicines from API:", err);
+        setMeds([
+          { id: 'med-1', name: 'Lisinopril 10mg', time: 'Morning', instructions: 'Take 1 pill after breakfast', shape: 'Oval', color: 'Pink', image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300', taken: true },
+          { id: 'med-2', name: 'Metformin 500mg', time: 'Morning', instructions: 'Take 1 capsule with breakfast', shape: 'Capsule', color: 'White', image: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=300', taken: false },
+          { id: 'med-3', name: 'Atorvastatin 20mg', time: 'Night', instructions: 'Take 1 pill before bedtime', shape: 'Round', color: 'White', image: 'https://images.unsplash.com/photo-1550572017-edd951b55104?w=300', taken: false },
+        ]);
       }
     }
     if (patientId) {
@@ -134,14 +140,14 @@ export default function PatientDashboard({ hideImages = false, patientId }) {
         } else {
           // If empty, set the default mock ones
           setAppointments([
-            { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+            { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Rajesh', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
             { id: 2, title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
           ]);
         }
       } catch (err) {
         console.warn("Failed to load appointments from API. Using local mock defaults.", err);
         setAppointments([
-          { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+          { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Rajesh', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
           { id: 2, title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
         ]);
       }
@@ -167,7 +173,7 @@ export default function PatientDashboard({ hideImages = false, patientId }) {
           {/* Next Appointment alert */}
           <div className="bg-white text-[#2F4156] p-6 rounded-2xl flex items-center justify-center shadow-md min-h-[96px]">
             <div className="text-center">
-              <span className="text-xl sm:text-2xl font-black block">Appointment today at 2:00 PM with Dr. Smith</span>
+              <span className="text-xl sm:text-2xl font-black block">Appointment today at 2:00 PM with Dr. Rajesh</span>
             </div>
           </div>
 
@@ -251,9 +257,19 @@ export default function PatientDashboard({ hideImages = false, patientId }) {
                 </div>
 
                 {!hideImages && (
-                  <div className="w-full h-20 bg-white rounded-xl flex flex-col items-center justify-center shrink-0">
-                    <Image className="w-6 h-6 text-gray-400 mb-1" />
-                    <span className="text-[10px] font-black text-gray-500 uppercase">{med.shape} - {med.color}</span>
+                  <div className="w-full h-24 bg-white rounded-xl overflow-hidden flex flex-col items-center justify-center shrink-0 border border-gray-200">
+                    {med.image ? (
+                      <img 
+                        src={med.image} 
+                        alt={med.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full p-2">
+                        <Image className="w-6 h-6 text-gray-400 mb-1" />
+                        <span className="text-[10px] font-black text-gray-500 uppercase">{med.shape} - {med.color}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 

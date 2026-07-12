@@ -98,7 +98,7 @@ export default function App() {
     { sender: 'bot', text: 'Hello! I am your SilverCare drug safety assistant. Ask me questions like: "Can I eat grapefruit with my medicine?"' }
   ]);
 
-  const handleSendQuery = (queryText) => {
+  const handleSendQuery = async (queryText) => {
     const text = queryText || chatInput;
     if (!text) return;
     
@@ -106,22 +106,14 @@ export default function App() {
     setChatLogs(updatedLogs);
     setChatInput("");
 
-    setTimeout(() => {
-      let botResponse = "I have checked your active medications. Avoid consuming alcohol or grapefruit juice with cholesterol drugs like Atorvastatin. Consult your doctor.";
-      
-      const lowerText = text.toLowerCase();
-      if (lowerText.includes("grapefruit")) {
-        botResponse = "⚠️ Warning: Grapefruit juice interacts critically with Atorvastatin (your cholesterol medicine). It can increase the drug concentration in your blood to dangerous levels.";
-      } else if (lowerText.includes("milk") || lowerText.includes("calcium")) {
-        botResponse = "ℹ️ Note: Calcium/Milk can reduce the absorption of certain medications. If taking thyroid or antibiotic medications, space them at least 2 hours apart.";
-      } else if (lowerText.includes("alcohol")) {
-        botResponse = "⚠️ Warning: Alcohol increases the risk of stomach irritation and drowsiness when taken with Aspirin or Metformin.";
-      } else if (lowerText.includes("metformin")) {
-        botResponse = "Metformin 500mg should be taken with breakfast. Avoid taking it on an empty stomach to prevent nausea.";
-      }
-
-      setChatLogs([...updatedLogs, { sender: 'bot', text: botResponse }]);
-    }, 800);
+    try {
+      const activeId = user?.patientId || user?.userId || localStorage.getItem('user_id') || 'ramesh_kumar';
+      const data = await api.ai.chat(text, activeId);
+      setChatLogs([...updatedLogs, { sender: 'bot', text: data.response }]);
+    } catch (err) {
+      console.error("AI chat failed:", err);
+      setChatLogs([...updatedLogs, { sender: 'bot', text: "Sorry, I am having trouble connecting to my brain right now. Please try again later." }]);
+    }
   };
 
   // Accessibility actions

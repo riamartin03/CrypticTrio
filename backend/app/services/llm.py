@@ -263,3 +263,44 @@ async def check_food_interaction(query: str, active_meds: List[Dict[str, Any]]) 
         return warning_msg
     else:
         return f"### ✅ Safety Status: SAFE\n\nBased on your active medications ({meds_str}), there are no major known interactions with your query: '{query}'.\n\n**Advice**: You may proceed, but as always, consume in moderation and report any unusual symptoms to your caregiver or physician."
+
+async def ask_general_question(query: str, active_meds: List[Dict[str, Any]] = None) -> str:
+    """
+    Answers a general health/safety question using Gemini, taking active meds into account.
+    """
+    med_names = [med.get("name") for med in active_meds] if active_meds else []
+    meds_str = ", ".join(med_names) if med_names else "No active medications"
+    
+    prompt = f"""
+    You are a warm, caring, and empathetic AI health companion. A user is asking the following question:
+    "{query}"
+    
+    Their current active medication list is: {meds_str}.
+    
+    Provide an accurate, easy-to-understand, and comforting response. If their query has any potential interactions with their active medications, warn them clearly.
+    Speak naturally and conversationally, as a caring family member or companion would.
+    
+    CRITICAL: Do NOT use raw markdown formatting, hashtags, asterisks, or robotic bullet points. Keep it as clean, readable paragraphs of natural text.
+    Keep the answer concise and friendly, and include a natural, gentle reminder to check in with their doctor or pharmacist.
+    """
+    
+    if gemini_available:
+        try:
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(prompt)
+            # Remove any residual markdown characters just in case
+            clean_res = response.text.replace("**", "").replace("###", "").replace("*", "").strip()
+            return clean_res
+        except Exception as e:
+            logger.error(f"Gemini ask_general_question failed: {e}. Falling back to mock.")
+            
+    # Mock fallback answers (warm and conversational)
+    q_lower = query.lower()
+    if "fever" in q_lower:
+        return "I'm sorry to hear you're dealing with a fever. For a mild fever, the best things you can do are to get plenty of cozy rest and sip warm fluids like water or herbal tea. Over-the-counter remedies can help bring it down, but please promise me you'll call your doctor if the fever gets high (above 103°F) or lasts for more than a couple of days. Rest up!"
+    elif "blood pressure" in q_lower:
+        return "Keeping an eye on your blood pressure is so important! Generally, doctors like to see it stay around 120/80. To help keep it in a healthy range, try to enjoy meals with less salt, take gentle daily walks, and remember to take your medications on time. It's always a good idea to check with your doctor to find out what specific target is best for you."
+    elif "dementia" in q_lower:
+        return "Dealing with memory changes can be a journey, but please know you're not alone. Creating a calm, predictable daily routine and keeping things organized with clear labels around the house can make a world of difference. Remember to take it one gentle step at a time, and never hesitate to lean on family or a caregiver for support."
+    
+    return f"Thanks for asking! Regarding '{query}', I'd suggest starting with simple comforts: make sure you're drinking enough water, getting a good night's sleep, and checking off your daily tasks. Since I'm an AI companion, please remember to verify with your doctor or pharmacist to get advice tailored just for you."

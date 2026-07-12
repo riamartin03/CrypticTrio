@@ -91,7 +91,7 @@ class PatientProfileResponse(PatientProfileBase):
                 "medications": [
                     {"name": "Lisinopril", "dosage": "10mg", "schedule": "Morning", "image_url": None, "restock_date": "2026-08-01"}
                 ],
-                "physician_name": "Dr. Emily",
+                "physician_name": "Dr. Rajesh",
                 "clinic_phone": "555-0210"
             }
         }
