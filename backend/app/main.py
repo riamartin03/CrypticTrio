@@ -12,6 +12,10 @@ from app.routes import (
     ai_router,
     navigation_router,
 )
+from app.routes.domain import router as domain_router
+from app.routes.patients import router as patients_router
+from app.routes.visits import router as visits_router
+from app.routes.compliance import router as compliance_router
 
 # Configure logging format
 logging.basicConfig(
@@ -48,6 +52,10 @@ app.include_router(scheduler_router, prefix=settings.API_V1_STR)
 app.include_router(caregiver_router, prefix=settings.API_V1_STR)
 app.include_router(ai_router, prefix=settings.API_V1_STR)
 app.include_router(navigation_router, prefix=settings.API_V1_STR)
+app.include_router(domain_router, prefix=settings.API_V1_STR)
+app.include_router(patients_router, prefix=settings.API_V1_STR)
+app.include_router(visits_router, prefix=settings.API_V1_STR)
+app.include_router(compliance_router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Root"])
 async def root():

@@ -6,7 +6,7 @@ import CalendarModal from './CalendarModal';
 import SOSOverlay from './SOSOverlay';
 import { api } from '../services/api';
 
-export default function PatientDashboard({ hideImages = false }) {
+export default function PatientDashboard({ hideImages = false, patientId }) {
   // Active modal state: null, 'profile', 'visit', 'calendar', 'sos'
   const [activeModal, setActiveModal] = useState(null);
 
@@ -69,15 +69,57 @@ export default function PatientDashboard({ hideImages = false }) {
     loadProfile();
   }, []);
 
-  // Medications state (interactive inline checklist)
-  const [meds, setMeds] = useState([
-    { id: 'med-1', name: 'Lisinopril 10mg', time: 'Morning', instructions: 'Take 1 pill after breakfast', shape: 'Oval', color: 'Pink', taken: true },
-    { id: 'med-2', name: 'Metformin 500mg', time: 'Morning', instructions: 'Take 1 capsule with breakfast', shape: 'Capsule', color: 'White', taken: false },
-    { id: 'med-3', name: 'Atorvastatin 20mg', time: 'Night', instructions: 'Take 1 pill before bedtime', shape: 'Round', color: 'White', taken: false },
-  ]);
+  // Medications state (interactive inline checklist loaded from API)
+  const [meds, setMeds] = useState([]);
 
-  const toggleMedTaken = (id) => {
-    setMeds(meds.map(med => med.id === id ? { ...med, taken: !med.taken } : med));
+  useEffect(() => {
+    async function loadMeds() {
+      try {
+        const data = await api.scheduler.getMedicines(patientId);
+        if (data && data.length > 0) {
+          setMeds(data.map(m => ({
+            id: m.id || m._id || m.medicine_id,
+            name: m.name,
+            time: m.time_of_day || 'Morning',
+            instructions: m.instructions || 'Take as directed',
+            shape: m.shape || 'Oval',
+            color: m.color || 'White',
+            taken: m.taken || false
+          })));
+        } else {
+          setMeds([
+            { id: 'med-1', name: 'Lisinopril 10mg', time: 'Morning', instructions: 'Take 1 pill after breakfast', shape: 'Oval', color: 'Pink', taken: true },
+            { id: 'med-2', name: 'Metformin 500mg', time: 'Morning', instructions: 'Take 1 capsule with breakfast', shape: 'Capsule', color: 'White', taken: false },
+            { id: 'med-3', name: 'Atorvastatin 20mg', time: 'Night', instructions: 'Take 1 pill before bedtime', shape: 'Round', color: 'White', taken: false },
+          ]);
+        }
+      } catch (err) {
+        console.warn("Failed to load medicines from API:", err);
+      }
+    }
+    if (patientId) {
+      loadMeds();
+    }
+  }, [patientId]);
+
+  const toggleMedTaken = async (id) => {
+    const targetMed = meds.find(med => med.id === id);
+    if (!targetMed) return;
+    const newTaken = !targetMed.taken;
+
+    setMeds(meds.map(med => med.id === id ? { ...med, taken: newTaken } : med));
+
+    try {
+      await api.scheduler.logIntake({
+        patient_id: patientId,
+        medicine_id: id,
+        scheduled_time_slot: targetMed.time || 'Morning',
+        status: newTaken ? 'completed' : 'missed'
+      });
+    } catch (err) {
+      console.error("Failed to log intake to API, reverting status:", err);
+      setMeds(meds.map(med => med.id === id ? { ...med, taken: !newTaken } : med));
+    }
   };
 
   // Appointments
@@ -233,7 +275,15 @@ export default function PatientDashboard({ hideImages = false }) {
 
         {/* Card 5: SOS */}
         <button
-          onClick={() => setActiveModal('sos')}
+          onClick={async () => {
+            setActiveModal('sos');
+            try {
+              await api.user.triggerSOS(patientId);
+              console.log("SOS alert sent to backend.");
+            } catch (err) {
+              console.error("Failed to post SOS to backend:", err);
+            }
+          }}
           className="md:col-span-6 bg-white hover:bg-gray-55 text-[#2F4156] rounded-[28px] p-8 shadow-lg hover:shadow-xl transition-all flex flex-col items-center justify-center text-center min-h-[260px] focus:ring-4 focus:ring-red-400 cursor-pointer"
         >
           <div className="p-3 bg-[#2F4156] text-white rounded-2xl shadow-sm mb-4 animate-pulse">

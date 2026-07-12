@@ -14,17 +14,38 @@ export default function App() {
   const [initialAuthView, setInitialAuthView] = useState('landing');
 
   // Unified patient data for critical triggers (like SOS button)
-  const [profileData] = useState({
+  const [profileData, setProfileData] = useState({
     name: "Ramesh Kumar",
     gender: "Male",
     bloodGroup: "O+",
     allergies: ["Penicillin", "Sulfa Antibiotics", "Aspirin"],
     conditions: ["Early-stage Dementia", "Type 2 Diabetes", "Hypertension"],
-    surgicalHistory: [
-      { id: 1, surgery: "Appendectomy", year: "1988", hospital: "City General" },
-      { id: 2, surgery: "Knee Replacement", year: "2019", hospital: "Orthopedic Center" }
-    ]
+    emergency_contacts: [],
+    home_address: null
   });
+
+  useEffect(() => {
+    if (!user) return;
+    async function loadProfile() {
+      try {
+        const data = await api.user.getProfile();
+        if (data && data.profile) {
+          setProfileData({
+            name: data.name || "Ramesh Kumar",
+            gender: data.profile.gender || "Male",
+            bloodGroup: data.profile.blood_group || "O+",
+            allergies: data.profile.allergies || ["Penicillin", "Sulfa Antibiotics", "Aspirin"],
+            conditions: data.profile.primary_conditions || ["Early-stage Dementia", "Type 2 Diabetes", "Hypertension"],
+            emergency_contacts: data.profile.emergency_contacts || [],
+            home_address: data.profile.home_address || null
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to load profile in parent App:", err);
+      }
+    }
+    loadProfile();
+  }, [user]);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -291,22 +312,29 @@ export default function App() {
             </div>
             
             {/* Integrated Google Maps Embed */}
-            <div className="bg-sky-100 h-80 rounded-2xl relative overflow-hidden shadow-inner border-2 border-white">
-              <iframe
-                title="Google Maps Directions"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                src="https://maps.google.com/maps?q=123+Sunny+Meadows+Lane,San+Jose,CA&t=&z=14&ie=UTF8&iwloc=&output=embed"
-                allowFullScreen
-                loading="lazy"
-              ></iframe>
-            </div>
+            {(() => {
+              const homeAddress = profileData?.home_address?.address_text || "123 Sunny Meadows Lane, San Jose, CA";
+              return (
+                <>
+                  <div className="bg-sky-100 h-80 rounded-2xl relative overflow-hidden shadow-inner border-2 border-white">
+                    <iframe
+                      title="Google Maps Directions"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(homeAddress)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                      allowFullScreen
+                      loading="lazy"
+                    ></iframe>
+                  </div>
 
-            <div className="bg-white text-silver-dark rounded-2xl p-4">
-              <span className="text-xs text-gray-500 font-bold block uppercase">DESTINATION</span>
-              <span className="text-lg font-black">123 Sunny Meadows Lane, San Jose, CA</span>
-            </div>
+                  <div className="bg-white text-silver-dark rounded-2xl p-4">
+                    <span className="text-xs text-gray-500 font-bold block uppercase">DESTINATION</span>
+                    <span className="text-lg font-black">{homeAddress}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

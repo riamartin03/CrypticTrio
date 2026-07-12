@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HeartHandshake, User, ShieldAlert, Mail, Lock, Phone, Key, Calendar, FileText, MapPin, Heart, Users, Activity } from 'lucide-react';
 import { api } from '../services/api';
+import axiosApi from '../api';
 
 export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing', onViewChange }) {
   // view: 'landing' | 'patient' | 'caregiver'
@@ -107,7 +108,7 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
           throw new Error("Passwords do not match.");
         }
         
-        await api.auth.signup({
+        await axiosApi.post('/auth/signup', {
           email,
           name,
           password,
@@ -142,29 +143,34 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
         });
       }
       
-      const loginRes = await api.auth.login(email, password);
-      localStorage.setItem('silvercare_token', loginRes.access_token);
-      onLoginSuccess({
-        token: loginRes.access_token,
-        userId: loginRes.user_id,
-        role: loginRes.role,
-        name: loginRes.name || name || 'Ramesh Kumar',
-        patientId: loginRes.user_id
+      const res = await axiosApi.post('/auth/login', {
+        username: email,
+        email: email,
+        password,
+        role: 'patient'
       });
+      
+      localStorage.setItem('user_id', res.data.user_id);
+      localStorage.setItem('role', res.data.role);
+      localStorage.setItem('silvercare_token', res.data.access_token);
+      
+      onLoginSuccess({
+        token: res.data.access_token,
+        userId: res.data.user_id,
+        role: res.data.role,
+        name: res.data.name || name || 'Ramesh Kumar',
+        patientId: res.data.user_id
+      });
+      
+      window.history.replaceState({}, '', '/dashboard');
+      
     } catch (err) {
       if (err.message === "Passwords do not match.") {
         setError("Passwords do not match.");
         return;
       }
-      console.warn("Backend auth failed or offline. Falling back to local mock session:", err);
-      localStorage.setItem('silvercare_token', 'dummy-patient-token');
-      onLoginSuccess({
-        token: 'dummy-patient-token',
-        userId: 'dummy-patient-id',
-        role: 'patient',
-        name: name || 'Ramesh Kumar',
-        patientId: 'dummy-patient-id'
-      });
+      const errMsg = err.response?.data?.detail || err.message || "Incorrect email or password";
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -176,34 +182,40 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
     setLoading(true);
     try {
       if (authTab === 'signup') {
-        await api.auth.signup({
+        await axiosApi.post('/auth/signup', {
           email,
           name,
           password,
           role: 'caregiver',
-          link_user_id: patientId || undefined
+          link_user_id: patientId || undefined,
+          patient_id: patientId || undefined
         });
       }
       
-      const loginRes = await api.auth.login(email, password);
-      localStorage.setItem('silvercare_token', loginRes.access_token);
-      onLoginSuccess({
-        token: loginRes.access_token,
-        userId: loginRes.user_id,
-        role: loginRes.role,
-        name: loginRes.name || name || 'John Caregiver',
-        patientId: patientId || 'dummy-patient-id'
+      const res = await axiosApi.post('/auth/login', {
+        username: email,
+        email: email,
+        password,
+        role: 'caregiver'
       });
+      
+      localStorage.setItem('user_id', res.data.user_id);
+      localStorage.setItem('role', res.data.role);
+      localStorage.setItem('silvercare_token', res.data.access_token);
+      
+      onLoginSuccess({
+        token: res.data.access_token,
+        userId: res.data.user_id,
+        role: res.data.role,
+        name: res.data.name || name || 'John Caregiver',
+        patientId: res.data.patient_id || patientId || 'dummy-patient-id'
+      });
+      
+      window.history.replaceState({}, '', '/dashboard');
+      
     } catch (err) {
-      console.warn("Backend auth failed or offline. Falling back to local mock session:", err);
-      localStorage.setItem('silvercare_token', 'dummy-caregiver-token');
-      onLoginSuccess({
-        token: 'dummy-caregiver-token',
-        userId: 'dummy-caregiver-id',
-        role: 'caregiver',
-        name: name || 'John Caregiver',
-        patientId: patientId || 'dummy-patient-id'
-      });
+      const errMsg = err.response?.data?.detail || err.message || "Incorrect email or password";
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

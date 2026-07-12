@@ -19,6 +19,23 @@ class UserCreate(BaseModel):
     role: UserRole
     # For signup, allow passing an initial caregiver or patient to link to
     link_user_id: Optional[str] = None
+    patient_id: Optional[str] = None
+    
+    # Optional patient/caregiver fields
+    preferred_name: Optional[str] = None
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    blood_group: Optional[str] = None
+    primary_conditions: Optional[List[str]] = None
+    mental_disabilities: Optional[List[str]] = None
+    physical_disabilities: Optional[List[str]] = None
+    lifetime_medications: Optional[str] = None
+    physician_name: Optional[str] = None
+    clinic_phone: Optional[str] = None
+    emergency_contacts: Optional[List[dict]] = None
+    allergies: Optional[List[str]] = None
+    home_address: Optional[dict] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -30,6 +47,7 @@ class Token(BaseModel):
     user_id: str
     role: UserRole
     name: str
+    patient_id: Optional[str] = None
 
 class UserResponse(UserBase):
     id: str = Field(alias="_id")

@@ -99,16 +99,17 @@ async def signup(user_in: UserCreate):
     # Generate unique ID
     new_user_id = str(uuid.uuid4())
     
-    # Map associations if link_user_id is provided
+    # Map associations if link_user_id or patient_id is provided
     associated_ids = []
-    if user_in.link_user_id:
+    link_id = user_in.link_user_id or user_in.patient_id
+    if link_id:
         # Verify the linked user exists
-        linked = await db["users"].find_one({"_id": user_in.link_user_id})
+        linked = await db["users"].find_one({"_id": link_id})
         if linked:
-            associated_ids.append(user_in.link_user_id)
+            associated_ids.append(link_id)
             # Bidirectional update of the linked user's associations
             await db["users"].update_one(
-                {"_id": user_in.link_user_id},
+                {"_id": link_id},
                 {"$push": {"associated_user_ids": new_user_id}}
             )
             
@@ -125,28 +126,63 @@ async def signup(user_in: UserCreate):
     
     await db["users"].insert_one(user_doc)
     
-    # If the role is PATIENT, automatically create an empty Patient Profile
+    # If the role is PATIENT, automatically create Patient Profile and seed default medicines
     if user_in.role == UserRole.PATIENT:
         profile_doc = {
             "_id": str(uuid.uuid4()),
             "patient_id": new_user_id,
-            "preferred_name": user_in.name,
-            "phone": None,
-            "date_of_birth": None,
-            "gender": None,
-            "blood_group": None,
-            "primary_conditions": [],
-            "mental_disabilities": [],
-            "physical_disabilities": [],
-            "lifetime_medications": None,
-            "physician_name": None,
-            "clinic_phone": None,
-            "emergency_contacts": [],
+            "preferred_name": user_in.preferred_name or user_in.name,
+            "phone": user_in.phone,
+            "date_of_birth": user_in.date_of_birth,
+            "gender": user_in.gender,
+            "blood_group": user_in.blood_group,
+            "primary_conditions": user_in.primary_conditions or [],
+            "mental_disabilities": user_in.mental_disabilities or [],
+            "physical_disabilities": user_in.physical_disabilities or [],
+            "lifetime_medications": user_in.lifetime_medications,
+            "physician_name": user_in.physician_name,
+            "clinic_phone": user_in.clinic_phone,
+            "emergency_contacts": user_in.emergency_contacts or [],
             "medical_history": [],
-            "allergies": [],
-            "home_address": None
+            "allergies": user_in.allergies or [],
+            "home_address": user_in.home_address
         }
         await db["patients"].insert_one(profile_doc)
+        
+        # Seed default medicines into database
+        default_meds = [
+            {
+                "_id": f"med-{new_user_id}-1",
+                "patient_id": new_user_id,
+                "name": "Lisinopril 10mg",
+                "time_of_day": "Morning",
+                "instructions": "Take 1 pill after breakfast",
+                "shape": "Oval",
+                "color": "Pink",
+                "taken": True
+            },
+            {
+                "_id": f"med-{new_user_id}-2",
+                "patient_id": new_user_id,
+                "name": "Metformin 500mg",
+                "time_of_day": "Morning",
+                "instructions": "Take 1 capsule with breakfast",
+                "shape": "Capsule",
+                "color": "White",
+                "taken": False
+            },
+            {
+                "_id": f"med-{new_user_id}-3",
+                "patient_id": new_user_id,
+                "name": "Atorvastatin 20mg",
+                "time_of_day": "Night",
+                "instructions": "Take 1 pill before bedtime",
+                "shape": "Round",
+                "color": "White",
+                "taken": False
+            }
+        ]
+        await db["medicines"].insert_many(default_meds)
         
     return user_doc
 
@@ -174,5 +210,6 @@ async def login(credentials: UserLogin):
         "token_type": "bearer",
         "user_id": user["_id"],
         "role": user["role"],
-        "name": user["name"]
+        "name": user["name"],
+        "patient_id": user.get("patient_id") or user.get("link_user_id")
     }

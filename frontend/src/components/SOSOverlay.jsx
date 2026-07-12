@@ -89,13 +89,18 @@ export default function SOSOverlay({ isOpen, onClose, profileData }) {
             </button>
 
             {/* Primary Caregiver */}
-            <button
-              onClick={() => alert("Simulating phone call: Dialing Primary Caregiver John...")}
-              className="py-5 px-6 bg-[#567C8D] hover:bg-[#2F4156] text-white rounded-2xl font-black text-xl flex items-center justify-center space-x-3 shadow-md active:scale-95 transition-all cursor-pointer min-h-[72px]"
-            >
-              <Heart className="w-6 h-6 text-white fill-white" />
-              <span>DIAL CAREGIVER JOHN</span>
-            </button>
+            {(() => {
+              const caretaker = (profileData?.emergency_contacts && profileData.emergency_contacts[0]) || { name: "John", phone: "555-0199" };
+              return (
+                <button
+                  onClick={() => alert(`Simulating phone call: Dialing Primary Caregiver ${caretaker.name}...`)}
+                  className="py-5 px-6 bg-[#567C8D] hover:bg-[#2F4156] text-white rounded-2xl font-black text-xl flex items-center justify-center space-x-3 shadow-md active:scale-95 transition-all cursor-pointer min-h-[72px]"
+                >
+                  <Heart className="w-6 h-6 text-white fill-white" />
+                  <span>DIAL CAREGIVER {caretaker.name.toUpperCase()}</span>
+                </button>
+              );
+            })()}
 
           </div>
 
