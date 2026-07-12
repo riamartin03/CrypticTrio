@@ -123,10 +123,31 @@ export default function PatientDashboard({ hideImages = false, patientId }) {
   };
 
   // Appointments
-  const [appointments, setAppointments] = useState([
-    { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
-    { id: 2, title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
-  ]);
+  const [appointments, setAppointments] = useState([]);
+
+  useEffect(() => {
+    async function loadAppointments() {
+      try {
+        const data = await api.visit.getAppointments(patientId);
+        if (data && data.length > 0) {
+          setAppointments(data);
+        } else {
+          // If empty, set the default mock ones
+          setAppointments([
+            { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+            { id: 2, title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
+          ]);
+        }
+      } catch (err) {
+        console.warn("Failed to load appointments from API. Using local mock defaults.", err);
+        setAppointments([
+          { id: 1, title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+          { id: 2, title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
+        ]);
+      }
+    }
+    loadAppointments();
+  }, [patientId]);
 
   return (
     <div className="space-y-12 pb-16 font-sans text-xl leading-relaxed text-[#2F4156] select-none">
@@ -311,6 +332,7 @@ export default function PatientDashboard({ hideImages = false, patientId }) {
         setMeds={setMeds}
         appointments={appointments}
         setAppointments={setAppointments}
+        patientId={patientId}
       />
 
       <CalendarModal

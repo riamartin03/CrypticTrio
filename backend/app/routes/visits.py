@@ -1,6 +1,6 @@
 import uuid
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from app.database import get_database
@@ -13,6 +13,14 @@ class AudioSummaryRequest(BaseModel):
     patient_id: str
     ai_consultation_summary: str
     extracted_prescription_notes: str
+
+class AppointmentModel(BaseModel):
+    patient_id: str
+    title: str
+    doctor: str
+    date: str
+    time: str
+    location: str
 
 @router.get("/active/{patient_id}", response_model=VisitDetails)
 async def get_active_visit(patient_id: str):
@@ -97,3 +105,21 @@ async def save_audio_summary(req: AudioSummaryRequest):
         await db["visits"].insert_one(visit_doc)
         
     return {"status": "success", "message": "AI audio summaries updated in dynamic visit records."}
+
+@router.get("/appointments/{patient_id}", response_model=List[Dict[str, Any]])
+async def get_appointments(patient_id: str):
+    db = get_database()
+    cursor = db["appointments"].find({"patient_id": patient_id})
+    appts = []
+    async for doc in cursor:
+        doc["id"] = str(doc.get("_id"))
+        appts.append(doc)
+    return appts
+
+@router.post("/appointments", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+async def create_appointment(appt: AppointmentModel):
+    db = get_database()
+    appt_doc = appt.model_dump()
+    appt_doc["_id"] = str(uuid.uuid4())
+    await db["appointments"].insert_one(appt_doc)
+    return {"status": "success", "message": "Appointment created successfully.", "id": appt_doc["_id"]}

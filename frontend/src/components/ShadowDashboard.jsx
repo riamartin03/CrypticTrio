@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, TrendingUp, Calendar, AlertOctagon, Heart, CheckCircle2, XCircle, ClipboardList, Plus } from 'lucide-react';
+import { api } from '../services/api';
 
-export default function ShadowDashboard() {
+export default function ShadowDashboard({ patientId }) {
   // Mock local state metrics for prototype representation
   const [sosLogs, setSosLogs] = useState([
     { id: 'sos-1', type: 'Emergency SOS Press', info: 'Ramesh triggered SOS panic button. Caregiver called back to resolve.', date: 'July 11, 2026', time: '02:14 PM', urgent: true },
@@ -12,27 +13,64 @@ export default function ShadowDashboard() {
     setSosLogs(sosLogs.filter((log) => log.id !== id));
   };
 
-  const [appointments, setAppointments] = useState([
-    { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: 'July 18, 2026', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
-    { id: 'cal-2', title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: 'July 24, 2026', time: '08:00 AM', location: 'Downtown Medical Center' },
-  ]);
+  const [appointments, setAppointments] = useState([]);
+
+  useEffect(() => {
+    async function loadAppointments() {
+      if (!patientId) return;
+      try {
+        const data = await api.visit.getAppointments(patientId);
+        if (data && data.length > 0) {
+          setAppointments(data);
+        } else {
+          setAppointments([
+            { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+            { id: 'cal-2', title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
+          ]);
+        }
+      } catch (err) {
+        console.warn("Failed to load appointments for caregiver.", err);
+        setAppointments([
+          { id: 'cal-1', title: 'Cardiologist Check-up', doctor: 'Dr. Emily Vance', date: '2026-07-18', time: '10:30 AM', location: 'St. Jude General, Rm 402' },
+          { id: 'cal-2', title: 'Bi-weekly Blood Labs', doctor: 'Labcorp Clinic', date: '2026-07-24', time: '08:00 AM', location: 'Downtown Medical Center' },
+        ]);
+      }
+    }
+    loadAppointments();
+  }, [patientId]);
 
   const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState("");
 
-  const addVisitLog = () => {
+  const addVisitLog = async () => {
     if (!newTitle || !newDate) return;
     const newVisit = {
-      id: `cal-${Date.now()}`,
+      patient_id: patientId || 'ramesh_kumar',
       title: newTitle,
       doctor: 'Assigned Care Clinic',
       date: newDate,
       time: '11:00 AM',
       location: 'Main Medical Center'
     };
-    setAppointments([...appointments, newVisit]);
-    setNewTitle("");
-    setNewDate("");
+    try {
+      const res = await api.visit.createAppointment(newVisit);
+      setAppointments([
+        ...appointments,
+        {
+          id: res.id || `cal-${Date.now()}`,
+          title: newTitle,
+          doctor: 'Assigned Care Clinic',
+          date: newDate,
+          time: '11:00 AM',
+          location: 'Main Medical Center'
+        }
+      ]);
+      setNewTitle("");
+      setNewDate("");
+    } catch (err) {
+      console.error("Failed to add appointment from caregiver portal:", err);
+      alert("Failed to save appointment: " + err.message);
+    }
   };
 
   return (

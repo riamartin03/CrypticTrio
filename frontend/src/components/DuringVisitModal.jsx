@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ClipboardList, X, Play, Square, Image, Plus, PlusCircle, CheckCircle } from 'lucide-react';
+import { api } from '../services/api';
 
-export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appointments, setAppointments }) {
+export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appointments, setAppointments, patientId }) {
   const [rxImage, setRxImage] = useState(null);
   const [rxForm, setRxForm] = useState({ name: "", dosage: "", frequency: "Morning", duration: "", remarks: "" });
   const [visitAppt, setVisitAppt] = useState({ date: "", time: "", doctor: "", notes: "" });
@@ -208,23 +209,40 @@ export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appoi
               />
               
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!rxForm.name) return;
-                  setMeds([
-                    ...meds,
-                    {
-                      id: `med-${Date.now()}`,
-                      name: rxForm.name,
-                      time: rxForm.frequency,
-                      instructions: rxForm.remarks || `Take ${rxForm.dosage} for ${rxForm.duration}`,
+                  const newMed = {
+                    patient_id: patientId,
+                    name: rxForm.name,
+                    visual_identifiers: {
                       shape: 'Round',
-                      color: 'White',
-                      taken: false
-                    }
-                  ]);
-                  setRxForm({ name: "", dosage: "", frequency: "Morning", duration: "", remarks: "" });
-                  setRxImage(null);
-                  alert("Medication registered into matrix!");
+                      color: 'White'
+                    },
+                    scheduled_times: [rxForm.frequency],
+                    custom_instructions: rxForm.remarks || `Take ${rxForm.dosage} for ${rxForm.duration}`,
+                    is_critical: false
+                  };
+                  try {
+                    const res = await api.scheduler.createMedicine(newMed);
+                    setMeds([
+                      ...meds,
+                      {
+                        id: res.medicine_id || `med-${Date.now()}`,
+                        name: rxForm.name,
+                        time: rxForm.frequency,
+                        instructions: rxForm.remarks || `Take ${rxForm.dosage} for ${rxForm.duration}`,
+                        shape: 'Round',
+                        color: 'White',
+                        taken: false
+                      }
+                    ]);
+                    setRxForm({ name: "", dosage: "", frequency: "Morning", duration: "", remarks: "" });
+                    setRxImage(null);
+                    alert("Medication registered into matrix!");
+                  } catch (err) {
+                    console.error("Failed to add medication:", err);
+                    alert("Failed to save medication: " + err.message);
+                  }
                 }}
                 className="w-full py-4 bg-silver-dark hover:bg-silver-midtone text-white font-black text-lg rounded-xl min-h-[64px]"
               >
@@ -265,21 +283,35 @@ export default function DuringVisitModal({ isOpen, onClose, meds, setMeds, appoi
               />
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!visitAppt.date || !visitAppt.doctor) return;
-                setAppointments([
-                  ...appointments,
-                  {
-                    id: Date.now(),
-                    title: 'Clinic Visit',
-                    doctor: visitAppt.doctor,
-                    date: visitAppt.date,
-                    time: visitAppt.time || '10:00 AM',
-                    location: visitAppt.notes || 'Clinic'
-                  }
-                ]);
-                setVisitAppt({ date: "", time: "", doctor: "", notes: "" });
-                alert("Appointment logged!");
+                const newAppt = {
+                  patient_id: patientId,
+                  title: 'Clinic Visit',
+                  doctor: visitAppt.doctor,
+                  date: visitAppt.date,
+                  time: visitAppt.time || '10:00 AM',
+                  location: visitAppt.notes || 'Clinic'
+                };
+                try {
+                  const res = await api.visit.createAppointment(newAppt);
+                  setAppointments([
+                    ...appointments,
+                    {
+                      id: res.id || Date.now(),
+                      title: 'Clinic Visit',
+                      doctor: visitAppt.doctor,
+                      date: visitAppt.date,
+                      time: visitAppt.time || '10:00 AM',
+                      location: visitAppt.notes || 'Clinic'
+                    }
+                  ]);
+                  setVisitAppt({ date: "", time: "", doctor: "", notes: "" });
+                  alert("Appointment logged!");
+                } catch (err) {
+                  console.error("Failed to log appointment:", err);
+                  alert("Failed to save appointment: " + err.message);
+                }
               }}
               className="w-full py-4 bg-silver-dark hover:bg-silver-midtone text-white font-black text-lg rounded-xl min-h-[64px]"
             >

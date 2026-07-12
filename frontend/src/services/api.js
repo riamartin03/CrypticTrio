@@ -79,6 +79,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ patient_id: patientId, transcript }),
     }),
+    getAppointments: (patientId) => request(`/visits/appointments/${patientId}`),
+    createAppointment: (apptData) => request('/visits/appointments', {
+      method: 'POST',
+      body: JSON.stringify(apptData),
+    }),
   },
   caregiver: {
     getDashboard: (patientId) => request(`/caregiver/dashboard?patient_id=${patientId}`),
