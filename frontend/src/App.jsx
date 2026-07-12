@@ -328,9 +328,20 @@ export default function App() {
                     ></iframe>
                   </div>
 
-                  <div className="bg-white text-silver-dark rounded-2xl p-4">
-                    <span className="text-xs text-gray-500 font-bold block uppercase">DESTINATION</span>
-                    <span className="text-lg font-black">{homeAddress}</span>
+                  <div className="bg-white text-silver-dark rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <span className="text-xs text-gray-500 font-bold block uppercase">DESTINATION</span>
+                      <span className="text-lg font-black">{homeAddress}</span>
+                    </div>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(homeAddress)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-4 px-6 bg-[#2F4156] hover:bg-[#1C2836] text-white rounded-xl font-black text-lg transition-all cursor-pointer flex items-center justify-center space-x-2 shrink-0 shadow-md text-center"
+                    >
+                      <Navigation className="w-5 h-5 fill-white text-white" />
+                      <span>GET DIRECTIONS</span>
+                    </a>
                   </div>
                 </>
               );

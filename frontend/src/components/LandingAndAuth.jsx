@@ -240,7 +240,7 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
             Your Empathetic Care Companion
           </p>
           <p className="text-xl sm:text-2xl font-bold text-silver-midtone leading-relaxed max-w-3xl mx-auto mb-10">
-            Simplifying medical tracking, clinic queue waiting, and doctor briefings with accessible designs for senior citizens and caregivers.
+            Because everyone deserves care, dignity, and someone by their side.
           </p>
 
           <div className="flex justify-center">
@@ -258,15 +258,12 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
           <h2 className="text-3xl font-black text-silver-dark uppercase border-b-4 border-silver-accent pb-2">
             About
           </h2>
-          <div className="space-y-4 text-xl font-bold text-silver-dark leading-relaxed">
+          <div className="space-y-6 text-xl font-bold text-silver-dark leading-relaxed">
             <p>
-              SilverCare is a healthcare platform designed to simplify interactions between patients, caregivers, and healthcare providers.
+              Care begins with people. That's why we've created a space where patients, caregivers, and healthcare professionals can come together, support one another, and navigate healthcare with greater ease. Whether you're seeking medical assistance, caring for a loved one, or providing professional care, our platform is designed to make every connection simple, meaningful, and accessible.
             </p>
             <p>
-              The platform focuses on secure access, efficient communication, and streamlined healthcare management while providing a user-friendly experience.
-            </p>
-            <p>
-              It aims to make healthcare services more accessible, organized, and reliable for everyone.
+              True care continues beyond the hospital doors. By encouraging lasting connections between patients, caregivers, and healthcare professionals, we hope to make every step of recovery feel supported, informed, and never alone. Together, we strive to build a community where compassion, trust, and timely support help people lead healthier, more confident lives.
             </p>
           </div>
         </div>
@@ -751,7 +748,22 @@ export default function LandingAndAuth({ onLoginSuccess, initialView = 'landing'
                   </div>
 
                   <div>
-                    <label className="block text-sm font-black text-silver-dark uppercase mb-2">GPS Coordinates / Map Location</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-black text-silver-dark uppercase">GPS Coordinates / Map Location</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const query = `${streetAddress || ''} ${city || ''} ${stateProvince || ''} ${zipCode || ''}`.trim();
+                          const url = query 
+                            ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+                            : 'https://www.google.com/maps';
+                          window.open(url, '_blank');
+                        }}
+                        className="text-xs font-black text-[#2F4156] underline uppercase hover:text-black cursor-pointer"
+                      >
+                        Find Coordinates on Google Maps
+                      </button>
+                    </div>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-4 text-gray-400 w-6 h-6" />
                       <input
